@@ -1,0 +1,2169 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ngaji Tracker - Database & Portal Wali Murid</title>
+    <!-- Tailwind CSS untuk Styling Modern -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Plus Jakarta Sans & Amiri -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome untuk Set Ikon Premium -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js CDN untuk Spider Chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- html2pdf.js CDN untuk Pembuatan Dokumen PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .arabic-font {
+            font-family: 'Amiri', serif;
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col justify-between">
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+    <!-- GLOBAL APPBAR -->
+    <header class="bg-emerald-950 text-white shadow-md sticky top-0 z-40 border-b border-emerald-900">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-emerald-800 p-2.5 rounded-xl shadow-inner flex items-center justify-center">
+                    <span class="arabic-font text-xl font-bold text-emerald-100">📖</span>
+                </div>
+                <div>
+                    <h1 class="text-lg font-extrabold tracking-tight flex items-center gap-2">
+                        <span data-i18n="app_title">Ngaji</span> <span class="text-emerald-300 font-medium">Tracker</span>
+                    </h1>
+                    <p class="text-xs text-emerald-200" data-i18n="app_subtitle">Database Privat Quran • Transparansi Orang Tua & Guru</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <div class="flex items-center bg-emerald-900 border border-emerald-800 rounded-lg p-1">
+                    <button onclick="setLanguage('id')" id="langBtnID" class="px-2 py-1 text-[10px] font-bold rounded transition-all bg-emerald-700 text-white">ID</button>
+                    <button onclick="setLanguage('en')" id="langBtnEN" class="px-2 py-1 text-[10px] font-bold rounded transition-all text-emerald-300 hover:text-white">EN</button>
+                </div>
+                
+                <div id="headerUserIndicator" class="flex items-center gap-2"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 1: MAIN GATEWAYS / HUB LOGIN -->
+    <!-- ========================================================================= -->
+    <main id="view-hub" class="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <div class="max-w-xl w-full flex flex-col gap-6">
+            
+            <!-- PORTAL ORANG TUA / SISWA -->
+            <div class="flex flex-col justify-between p-6 sm:p-8 rounded-3xl bg-white border border-emerald-100 shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1.5 bg-emerald-600"></div>
+                <div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-extrabold text-slate-900" data-i18n="parent_report">Akses Wali Murid</h2>
+                            <p class="text-[10px] text-emerald-600 font-bold uppercase tracking-wider" data-i18n="parent_access_badge">Gunakan Kode Akses</p>
+                        </div>
+                    </div>
+                    
+                    <p class="text-xs text-slate-600 leading-relaxed mb-6" data-i18n="parent_desc">
+                        Masukkan kode unik yang diberikan oleh Ustadz pembimbing untuk melihat sisa kuota les, capaian makhraj konkret, serta riwayat pembelajaran harian anak Anda.
+                    </p>
+                    
+                    <div class="space-y-3">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide" data-i18n="parent_code_label">Kode Unik Putra/Putri Anda</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                                <i class="fa-solid fa-key text-xs"></i>
+                            </span>
+                            <input id="parentCodeInput" type="text" placeholder="Contoh: ahmad-fathoni-77" data-i18n-placeholder="parent_placeholder" class="w-full pl-10 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all font-bold tracking-wide text-slate-700">
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="handleParentAccess()" class="w-full mt-6 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white text-xs font-bold py-3.5 px-4 rounded-xl shadow-lg hover:shadow-emerald-700/10 transition-all flex items-center justify-center gap-2">
+                    <span data-i18n="parent_btn_access">Masuk Ke Laporan Anak</span> <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+
+            <!-- PORTAL GURU PRIVAT -->
+            <div class="p-5 rounded-2xl bg-white border border-slate-200/60 shadow-sm">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-slate-500 text-sm"><i class="fa-solid fa-shield-halved"></i></span>
+                        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wide" data-i18n="teacher_access">Portal Guru</h3>
+                    </div>
+                    
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <div class="relative flex-1 sm:w-44">
+                            <input id="teacherPasswordInput" type="password" placeholder="Kata Sandi..." data-i18n-placeholder="teacher_password_placeholder" class="w-full pl-3 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-semibold text-slate-700">
+                        </div>
+                        <button onclick="handleTeacherLogin()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold py-1.5 px-3.5 rounded-lg transition-all shadow-sm" data-i18n="btn_login_submit">
+                            Masuk
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 2: TEACHER SUITE DASHBOARD -->
+    <!-- ========================================================================= -->
+    <div id="view-teacher" class="hidden flex-1 flex flex-col animate-fadeIn">
+        <nav class="bg-white border-b border-slate-200 shadow-sm">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-4 overflow-x-auto py-2">
+                <button onclick="switchTeacherTab('tab-database')" id="btn-tab-database" class="teacher-tab-btn px-4 py-2.5 text-xs font-bold border-b-2 border-emerald-600 text-emerald-600 rounded-t-lg transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-user-group text-emerald-500"></i> <span data-i18n="tab_database">Kelola Murid & Capaian</span>
+                </button>
+                <button onclick="switchTeacherTab('tab-curriculum')" id="btn-tab-curriculum" class="teacher-tab-btn px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 rounded-t-lg transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-map-location-dot text-slate-400"></i> <span data-i18n="tab_curriculum">Milestone & Target</span>
+                </button>
+                <button onclick="switchTeacherTab('tab-journal')" id="btn-tab-journal" class="teacher-tab-btn px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 rounded-t-lg transition-all flex items-center gap-2 relative">
+                    <i class="fa-solid fa-circle-play text-slate-400"></i> <span data-i18n="tab_journal">Jurnal Sesi</span>
+                    <span class="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                </button>
+            </div>
+        </nav>
+
+        <main class="flex-1 max-w-4xl w-full mx-auto p-4 md:p-6 lg:p-8">
+            
+            <!-- SUB TAB 1: DATABASE & PROFILE MANAGEMENT -->
+            <section id="tab-database" class="teacher-tab-content block">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Daftar Siswa (Kiri) -->
+                    <div class="lg:col-span-4 flex flex-col gap-4">
+                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3" data-i18n="student_list_title">Daftar Murid</h3>
+                            <button onclick="showAddStudentForm()" class="w-full mb-3 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-user-plus"></i> <span data-i18n="add_student_btn">Daftarkan Murid Baru</span>
+                            </button>
+                            <div id="teacherStudentList" class="flex flex-col gap-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- Detil Siswa Aktif / Form Add Student (Kanan) -->
+                    <div id="teacherStudentDetail" class="lg:col-span-8 flex flex-col gap-6"></div>
+                </div>
+            </section>
+
+            <!-- SUB TAB 2: INTERACTIVE CURRICULUM -->
+            <section id="tab-curriculum" class="teacher-tab-content hidden">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-6">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-compass text-emerald-600"></i> <span data-i18n="curriculum_title">Alur Capaian Pembelajaran (Adaptif)</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-1" data-i18n="curriculum_desc">Kecepatan belajar setiap anak berbeda. Target milestone ini bersifat fleksibel dan disesuaikan penuh dengan kesiapan anak, tanpa ikatan jumlah pertemuan yang kaku.</p>
+                    </div>
+                    <div id="curriculumOverviewBar" class="mt-4 p-4 bg-emerald-50 rounded-xl border border-emerald-100/50 flex justify-between items-center flex-wrap gap-3"></div>
+                </div>
+
+                <div class="flex bg-slate-200 p-1 rounded-xl mb-6 max-w-md">
+                    <button onclick="switchCurriculumTrack('iqra')" id="curr-track-iqra" class="flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all bg-white text-emerald-950 shadow-sm" data-i18n="track_iqra">Iqra' (Beginner)</button>
+                    <button onclick="switchCurriculumTrack('tahsin')" id="curr-track-tahsin" class="flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-950" data-i18n="track_tahsin">Tahsin (Intermediate)</button>
+                    <button onclick="switchCurriculumTrack('tahfiz')" id="curr-track-tahfiz" class="flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-950" data-i18n="track_tahfiz">Tahfidz (Advance)</button>
+                </div>
+
+                <div class="flex flex-col gap-6">
+                    <div id="curriculumIqraWrapper" class="block border border-amber-100 bg-amber-50/15 rounded-2xl p-5">
+                        <h3 class="text-xs font-extrabold text-amber-800 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span> <span data-i18n="phase_iqra_title">Fase Dasar: Penguasaan Hijaiyah & Vokal</span>
+                        </h3>
+                        <div id="curriculumIqraContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    </div>
+
+                    <div id="curriculumTahsinWrapper" class="hidden border border-sky-100 bg-sky-50/15 rounded-2xl p-5">
+                        <h3 class="text-xs font-extrabold text-sky-800 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <span class="h-2.5 w-2.5 rounded-full bg-sky-500"></span> <span data-i18n="phase_tahsin_title">Fase Tahsin: Hukum Mad & Tajwid Dasar</span>
+                        </h3>
+                        <div id="curriculumTahsinContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    </div>
+
+                    <div id="curriculumTahfizWrapper" class="hidden border border-emerald-100 bg-emerald-50/15 rounded-2xl p-5">
+                        <h3 class="text-xs font-extrabold text-emerald-800 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span> <span data-i18n="phase_tahfiz_title">Fase Tahfidz: Pelafalan Tartil & Juz Amma</span>
+                        </h3>
+                        <div id="curriculumTahfizContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SUB TAB 3: DAILY JOURNAL & SESSIONS -->
+            <section id="tab-journal" class="teacher-tab-content hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    
+                    <!-- Form Input Log Sesi -->
+                    <form id="journalForm" onsubmit="handleJournalSubmit(event)" class="lg:col-span-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-4">
+                        <div class="border-b border-slate-100 pb-3">
+                            <h2 class="text-base font-bold text-slate-800" data-i18n="journal_title">Catat Jurnal & Progress Sesi</h2>
+                            <p class="text-xs text-slate-500 mt-0.5" data-i18n="journal_subtitle">Catatan ini dikirim instan ke portal orang tua. Setiap submisi sesi otomatis mengurangi sisa kuota murid sebanyak 1 sesi.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-slate-600 mb-1" data-i18n="lbl_select_student">Pilih Siswa</label>
+                                <select id="formStudentSelect" onchange="autoFillJournalForm()" class="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white font-bold transition-all"></select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1" data-i18n="lbl_session_num">Pertemuan Sesi Ke-</label>
+                                <input id="formMeetingNum" type="number" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all font-bold">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1" data-i18n="lbl_current_material">Buku / Jilid Pembelajaran</label>
+                                <input id="formMateri" type="text" placeholder="Contoh: Iqra Jilid 4, Al-Baqarah" required class="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1" data-i18n="lbl_latest_page">Halaman / Ayat Terbaru</label>
+                                <input id="formHalaman" type="number" placeholder="Contoh: 15" required class="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all font-bold">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1" data-i18n="lbl_fluency_rating">Tingkat Kelancaran</label>
+                                <select id="formKelancaran" class="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all font-semibold">
+                                    <option value="Sangat Lancar (A)">Sangat Lancar (A)</option>
+                                    <option value="Lancar (B)" selected>Lancar (B)</option>
+                                    <option value="Cukup Lancar (C)">Cukup Lancar (C)</option>
+                                    <option value="Perlu Bimbingan Ekstra (D)">Perlu Bimbingan Ekstra (D)</option>
+                                </select>
+                            </div>
+
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-slate-600 mb-1" data-i18n="lbl_session_date">Tanggal Sesi</label>
+                                <input id="formTanggal" type="date" required class="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all">
+                            </div>
+
+                            <div class="sm:col-span-2">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-xs font-semibold text-slate-600" data-i18n="lbl_evaluation_notes">Catatan Perkembangan & Feedback Sesi</label>
+                                    <button type="button" onclick="generateAiFeedbackFromForm()" class="text-[10px] bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold px-2 py-1 rounded flex items-center gap-1 transition-all">
+                                        <i class="fa-solid fa-wand-magic-sparkles text-[9px]"></i> ✨ <span data-i18n="lbl_ai_polish">Poles Catatan Kasar dengan AI</span>
+                                    </button>
+                                </div>
+                                <textarea id="formCatatan" rows="3" required placeholder="Tulis catatan perkembangan spesifik hari ini." class="w-full p-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all resize-none"></textarea>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3.5 rounded-xl shadow transition-all flex items-center justify-center gap-2 mt-2">
+                            <i class="fa-solid fa-floppy-disk"></i> <span data-i18n="lbl_btn_submit_journal">Kirim Laporan & Update Sesi</span>
+                        </button>
+                    </form>
+
+                    <!-- Feedback Guide Guidelines (Kanan) -->
+                    <div class="lg:col-span-4 flex flex-col gap-4">
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                                <i class="fa-solid fa-compass-drafting text-emerald-600"></i> <span data-i18n="lbl_guide_title">Panduan Observasi Spesifik</span>
+                            </h3>
+                            <p class="text-[11px] text-slate-500 leading-relaxed mb-3" data-i18n="lbl_guide_desc">Orang tua menghargai objektivitas. Hindari menyalin template instan yang sama setiap minggu. Fokuskan evaluasi pada:</p>
+                            <div class="space-y-2 text-[11px] text-slate-600">
+                                <div class="p-2 bg-slate-50 rounded-lg" data-i18n="lbl_guide_item1">• Bunyi tebal tipis Kha, Ghon, Qof, Dhad.</div>
+                                <div class="p-2 bg-slate-50 rounded-lg" data-i18n="lbl_guide_item2">• Panjang Mad Asli yang sering terseret lebih dari 2 ketukan.</div>
+                                <div class="p-2 bg-slate-50 rounded-lg" data-i18n="lbl_guide_item3">• Kepasifan atau keaktifan anak meniru suara guru.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 3: PARENT ACCESS PORTAL -->
+    <!-- ========================================================================= -->
+    <main id="view-parent" class="hidden flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 lg:p-8 animate-fadeIn">
+        <div id="parentReportContainer" class="flex flex-col gap-6"></div>
+    </main>
+
+    <!-- RAPORT PDF OFFLINE PRINT TEMPLATE (HIDDEN FROM MAIN UI SCREEN) -->
+    <div class="hidden">
+        <div id="pdfPrintTemplate" class="p-8 bg-white text-slate-800 flex flex-col gap-6 border border-slate-200 rounded" style="width: 690px; margin: 0 auto;">
+            <!-- Kop Raport -->
+            <div class="text-center border-b-4 border-emerald-900 pb-4 flex items-center justify-between">
+                <div class="text-left">
+                    <h1 class="text-lg font-extrabold text-emerald-950 tracking-tight" id="pdfHeaderTitle">LAPORAN DETAIL EVALUASI BELAJAR MENGAJI</h1>
+                    <p class="text-[9px] text-emerald-800 font-bold uppercase tracking-wider">Ngaji Tracker • Ust. Hasan Kamal</p>
+                </div>
+            </div>
+
+            <!-- Profile Info -->
+            <div class="flex flex-col gap-4">
+                <div class="w-full grid grid-cols-3 gap-y-4 gap-x-4 text-xs">
+                    <div>
+                        <span class="text-[9px] text-slate-400 font-bold block uppercase tracking-wide" id="pdfLabelName">Nama Lengkap</span>
+                        <p id="pdfSiswaNama" class="font-extrabold text-xs text-slate-800">-</p>
+                    </div>
+                    <div>
+                        <span class="text-[9px] text-slate-400 font-bold block uppercase tracking-wide" id="pdfLabelAge">Usia Siswa</span>
+                        <p id="pdfSiswaUsia" class="font-bold text-slate-700">-</p>
+                    </div>
+                    <div>
+                        <span class="text-[9px] text-slate-400 font-bold block uppercase tracking-wide" id="pdfLabelLevel">Kategori Belajar</span>
+                        <p id="pdfSiswaKategori" class="font-bold text-slate-700">-</p>
+                    </div>
+                    <div>
+                        <span class="text-[9px] text-slate-400 font-bold block uppercase tracking-wide" id="pdfLabelMateri">Posisi Mengaji Saat Ini</span>
+                        <p id="pdfSiswaMateri" class="font-bold text-slate-700">-</p>
+                    </div>
+                    <div>
+                        <span class="text-[9px] text-slate-400 font-bold block uppercase tracking-wide" id="pdfLabelParent">Orang Tua / Wali</span>
+                        <p id="pdfSiswaWali" class="font-bold text-slate-700">-</p>
+                    </div>
+                    <div>
+                        <span class="text-[9px] text-slate-400 font-bold block uppercase tracking-wide" id="pdfLabelSesi">Sesi Terpakai / Total Sesi</span>
+                        <p id="pdfSiswaSesi" class="font-bold text-slate-700">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detail Lulus Huruf & Perlu Perbaikan -->
+            <div class="border-t border-slate-100 pt-4 grid grid-cols-2 gap-4 text-xs">
+                <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100/50">
+                    <h4 class="font-bold text-emerald-950 uppercase tracking-wider mb-2" id="pdfLabelLulus">✅ Huruf / Hukum yang Sudah Lulus</h4>
+                    <p id="pdfLulusHuruf" class="font-bold text-emerald-800 leading-relaxed"></p>
+                </div>
+                <div class="p-3 bg-amber-50 rounded-xl border border-amber-200/50">
+                    <h4 class="font-bold text-amber-950 uppercase tracking-wider mb-2" id="pdfLabelKeliru">⚠️ Huruf yang Masih Sering Keliru</h4>
+                    <p id="pdfUlangHuruf" class="font-bold text-amber-800 leading-relaxed"></p>
+                </div>
+            </div>
+
+            <!-- Bagian Tengah: Spider Chart & Metrik Evaluasi Stacked Layout -->
+            <div class="border-t border-slate-100 pt-4 flex flex-col items-center">
+                <div class="flex flex-col items-center gap-4 w-full">
+                    <div class="flex justify-center items-center bg-slate-50 p-4 rounded-2xl border border-slate-100 w-[420px] shadow-inner">
+                        <img id="pdfRadarImage" alt="Grafik Radar Penilaian" class="max-h-64 max-w-full">
+                    </div>
+                </div>
+            </div>
+
+            <!-- DETAIL PARAMETER PENILAIAN DI BAWAH SPIDER CHART -->
+            <div class="grid grid-cols-5 gap-2 text-center text-[10px] mt-1 border-t border-b border-slate-100 py-3">
+                <div class="bg-slate-50 p-2 rounded-lg">
+                    <span class="font-bold text-slate-400 uppercase block mb-0.5" id="pdfMakhrajText">Makhraj</span>
+                    <p id="pdfValMakhraj" class="font-extrabold text-slate-800 text-xs">-</p>
+                </div>
+                <div class="bg-slate-50 p-2 rounded-lg">
+                    <span class="font-bold text-slate-400 uppercase block mb-0.5" id="pdfTajwidText">Tajwid</span>
+                    <p id="pdfValTajwid" class="font-extrabold text-slate-800 text-xs">-</p>
+                </div>
+                <div class="bg-slate-50 p-2 rounded-lg">
+                    <span class="font-bold text-slate-400 uppercase block mb-0.5" id="pdfTahsinText">Tahsin</span>
+                    <p id="pdfValTahsin" class="font-extrabold text-slate-800 text-xs">-</p>
+                </div>
+                <div class="bg-slate-50 p-2 rounded-lg">
+                    <span class="font-bold text-slate-400 uppercase block mb-0.5" id="pdfKelancaranText">Kelancaran</span>
+                    <p id="pdfValKelancaran" class="font-extrabold text-slate-800 text-xs">-</p>
+                </div>
+                <div class="bg-slate-50 p-2 rounded-lg">
+                    <span class="font-bold text-slate-400 uppercase block mb-0.5" id="pdfAdabText">Adab</span>
+                    <p id="pdfValAdab" class="font-extrabold text-slate-800 text-xs">-</p>
+                </div>
+            </div>
+
+            <!-- DETAIL DESKRIPSI KRITERIA NILAI (ANSWERS USER'S CRITIQUE) -->
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-150 text-[9px] text-slate-500 leading-relaxed grid grid-cols-2 gap-x-4 gap-y-1">
+                <div><strong>10 - 20:</strong> <span id="pdfGuideText1">Siswa baru dapat melafalkan huruf-huruf sederhana.</span></div>
+                <div><strong>21 - 40:</strong> <span id="pdfGuideText2">Mampu melafalkan huruf dengan ketukan tempo lambat.</span></div>
+                <div><strong>41 - 60:</strong> <span id="pdfGuideText3">Mulai konsisten makhraj dasar, perlu bimbingan tajwid.</span></div>
+                <div><strong>61 - 80:</strong> <span id="pdfGuideText4">Membaca lancar dengan tajwid mendasar yang stabil.</span></div>
+                <div class="col-span-2"><strong>81 - 100:</strong> <span id="pdfGuideText5">Pelafalan murni, tajwid konsisten, adab yang prima sepanjang sesi belajar.</span></div>
+            </div>
+
+            <!-- Bagian Bawah: Catatan Penting & Potensi Perkembangan -->
+            <div class="grid grid-cols-2 gap-3 border-t border-slate-100 pt-4 text-xs">
+                <div class="bg-amber-50 p-3.5 rounded-xl border border-amber-200/50">
+                    <h4 class="font-bold text-amber-900 uppercase tracking-wider mb-1" id="pdfSiswaCatatanTitle">Pesan Motivasi untuk Anak</h4>
+                    <p id="pdfSiswaCatatan" class="leading-relaxed text-amber-800 font-medium italic">Tidak ada catatan.</p>
+                </div>
+                <div class="bg-emerald-50 p-3.5 rounded-xl border border-emerald-100/50">
+                    <h4 class="font-bold text-emerald-950 uppercase tracking-wider mb-1" id="pdfSiswaPotensiTitle">Rekomendasi Potensi</h4>
+                    <p id="pdfSiswaPotensi" class="leading-relaxed text-emerald-800 font-medium">Tidak ada evaluasi potensi.</p>
+                </div>
+            </div>
+
+            <!-- Tanda Tangan Guru -->
+            <div class="flex justify-between items-end mt-6 pt-3 border-t border-slate-100 text-[9px] text-slate-400">
+                <div>
+                    <p id="pdfNoticeText">Dokumen rapor diterbitkan secara elektronik oleh Ngaji Tracker.</p>
+                    <p class="font-mono mt-0.5" id="pdfExportTimestamp">Waktu unduh: -</p>
+                </div>
+                <div class="text-center w-36">
+                    <p class="mb-10" id="pdfSignatureTitle">Ustadz Pembimbing,</p>
+                    <div class="border-b-2 border-slate-300 w-full mx-auto"></div>
+                    <p class="font-bold mt-1 text-slate-700">Ust. Hasan Kamal</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GLOBAL CONFIRMATION DELETE MODAL -->
+    <div id="deleteConfirmModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full border border-slate-100 shadow-2xl animate-fadeIn flex flex-col gap-4">
+            <div class="flex items-center gap-3 text-rose-600">
+                <span class="text-2xl bg-rose-50 p-2.5 rounded-xl"><i class="fa-solid fa-trash-can"></i></span>
+                <div>
+                    <h3 class="font-extrabold text-slate-900 text-sm" data-i18n="lbl_delete_student">Hapus Data Murid</h3>
+                </div>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed"><span data-i18n="lbl_confirm_delete">Apakah Anda yakin ingin menghapus seluruh data siswa</span> <strong id="deleteStudentNameText">-</strong>? <span data-i18n="lbl_confirm_delete_extra">Semua data log sesi akan hilang permanen.</span></p>
+            <div class="flex gap-2 justify-end text-xs font-bold pt-2 border-t border-slate-100">
+                <button onclick="closeDeleteModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 px-4 rounded-xl transition-all" data-i18n="btn_cancel">Batal</button>
+                <button onclick="executeDeleteStudent()" class="bg-rose-600 hover:bg-rose-700 text-white py-2.5 px-4 rounded-xl transition-all shadow" data-i18n="lbl_delete_btn">Hapus Permanen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 py-5 px-6 text-center text-[11px] text-slate-400">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+            <p data-i18n="footer_text">© 2026 Ngaji Tracker. Mengembangkan Quranic Teaching Management Transparan & Berorientasi Hasil.</p>
+            <div id="logoutBtnContainer"></div>
+        </div>
+    </footer>
+
+    <script>
+        // =========================================================================
+        // 1. DICTIONARY MULTI-BAHASA (EN / ID)
+        // =========================================================================
+        let currentLang = 'id';
+
+        const translations = {
+            id: {
+                app_title: "Ngaji",
+                app_subtitle: "Database Ngaji Privat bersama Ust. Hasan Kamal",
+                parent_report: "Akses Wali Murid",
+                parent_access_badge: "Gunakan Kode Akses",
+                parent_code_label: "Kode Unik Putra/Putri Anda",
+                parent_placeholder: "Contoh: ahmad-fathoni-77",
+                parent_btn_access: "Akses Laporan Perkembangan",
+                parent_desc: "Masukkan kode unik yang diberikan oleh Ustadz pembimbing untuk melihat sisa kuota les, capaian makhraj konkret, serta riwayat pembelajaran harian anak Anda.",
+                teacher_access: "Portal Guru",
+                teacher_password_placeholder: "Kata Sandi...",
+                btn_login_submit: "Masuk",
+                logout_btn: "Keluar Portal",
+                tab_database: "Kelola Murid & Capaian",
+                tab_curriculum: "Milestone & Target",
+                tab_journal: "Jurnal Sesi",
+                student_list_title: "Daftar Murid",
+                add_student_btn: "Daftarkan Murid Baru",
+                add_student_title: "Registrasi Murid Baru",
+                add_student_desc: "Lengkapi data di bawah ini untuk menambahkan siswa privat baru ke database.",
+                lbl_full_name: "Nama Lengkap",
+                lbl_age: "Usia Siswa",
+                lbl_parent_name: "Nama Orang Tua / Wali",
+                lbl_whatsapp: "No. WhatsApp Wali",
+                lbl_custom_code: "Kode Unik Akses Orang Tua (Kustom)",
+                lbl_custom_code_hint: "Kosongkan untuk otomatis men-generate kode unik.",
+                lbl_start_book: "Buku / Jilid Mulai",
+                lbl_start_page: "Halaman Mulai",
+                lbl_target_page: "Target Halaman",
+                lbl_skills_init: "Asesmen Metrik Penilaian (0 - 100)",
+                lbl_makhraj: "Makhraj Huruf",
+                lbl_tajwid: "Kaidah Tajwid",
+                lbl_tahsin: "Tahsin (Irama)",
+                lbl_fluency: "Kelancaran Membaca",
+                lbl_adab: "Adab & Fokus",
+                lbl_start_notes: "Catatan Awal Diagnosa Guru",
+                btn_save_student: "Simpan Data Murid",
+                btn_cancel: "Batal",
+                lbl_student_id: "ID Murid",
+                lbl_joined_since: "Mulai Gabung",
+                lbl_report_pdf_notes: "Catatan untuk Anak",
+                lbl_report_pdf_potential: "Potensi & Saran Guru",
+                lbl_main_evaluation: "Diagnosa & Masalah Menahun",
+                lbl_journal_history: "Riwayat Jurnal Sesi",
+                lbl_curriculum_program: "Alur Capaian Milestone",
+                lbl_select_student: "Pilih Siswa",
+                lbl_completed_sessions: "Sesi Selesai",
+                lbl_session_num: "Pertemuan Sesi Ke-",
+                lbl_current_material: "Buku / Jilid Pembelajaran",
+                lbl_latest_page: "Halaman / Ayat Terbaru",
+                lbl_fluency_rating: "Tingkat Kelancaran",
+                lbl_session_date: "Tanggal Sesi",
+                lbl_pdf_btn: "Unduh Laporan Rapor PDF",
+                lbl_curriculum_progress: "Milestone Alur Capaian Belajar",
+                lbl_curriculum_progress_desc: "Milestone bersifat fleksibel dan adaptif mengikuti kecepatan belajar unik masing-masing anak.",
+                lbl_latest_material: "Posisi Mengaji Saat Ini",
+                lbl_status_fluency: "Kategori Kelancaran",
+                lbl_target_curriculum: "Target Buku",
+                lbl_potential_dev: "Potensi Berkembang",
+                lbl_session_logs_title: "Jurnal Catatan Sesi Harian",
+                toast_success_save: "Laporan harian sesi sukses disimpan!",
+                toast_success_student_added: "Murid baru berhasil ditambahkan!",
+                toast_pdf_processing: "Mempersiapkan Rapor PDF...",
+                toast_pdf_success: "Dokumen Rapor PDF berhasil diunduh!",
+                lbl_download_time: "Unduh pada",
+                lbl_student_level: "Kategori Belajar",
+                lbl_remaining_sessions: "Sisa Sesi",
+                lbl_total_sessions: "Total Paket Sesi",
+                lbl_sessions_count: "Sesi",
+                lbl_package_sessions: "Jumlah Sesi Paket",
+                lbl_save_edited: "Simpan Perubahan",
+                lbl_delete_student: "Hapus Data Murid",
+                lbl_confirm_delete: "Apakah Anda yakin ingin menghapus seluruh data siswa",
+                lbl_confirm_delete_extra: "Semua data log sesi akan hilang permanen.",
+                lbl_delete_btn: "Hapus Permanen",
+                lbl_add_success: "Murid baru berhasil ditambahkan!",
+                lbl_edit_success: "Profil murid sukses disinkronkan!",
+                lbl_delete_success: "Murid berhasil dihapus!",
+                footer_text: "© 2026 Ngaji Tracker. Mengembangkan Quranic Teaching Management Transparan & Berorientasi Hasil.",
+                curriculum_title: "Alur Capaian Pembelajaran (Adaptif)",
+                curriculum_desc: "Kecepatan belajar setiap anak berbeda. Target milestone ini bersifat fleksibel dan disesuaikan penuh dengan kesiapan anak, tanpa ikatan jumlah pertemuan yang kaku.",
+                track_iqra: "Iqra' (Beginner)",
+                track_tahsin: "Tahsin (Intermediate)",
+                track_tahfiz: "Tahfidz (Advance)",
+                phase_iqra_title: "Fase Dasar: Penguasaan Hijaiyah & Vokal",
+                phase_tahsin_title: "Fase Tahsin: Hukum Mad & Tajwid Dasar",
+                phase_tahfiz_title: "Fase Tahfidz: Pelafalan Tartil & Juz Amma",
+                journal_title: "Catat Jurnal & Progress Sesi",
+                journal_subtitle: "Catatan ini dikirim instan ke portal orang tua. Setiap submisi sesi otomatis mengurangi sisa kuota murid sebanyak 1 sesi.",
+                lbl_btn_submit_journal: "Kirim Laporan & Update Sesi",
+                lbl_guide_title: "Panduan Observasi Spesifik",
+                lbl_guide_desc: "Orang tua menghargai objektivitas. Hindari menyalin template instan yang sama setiap minggu. Fokuskan evaluasi pada:",
+                lbl_guide_item1: "• Bunyi tebal tipis Kha, Ghon, Qof, Dhad.",
+                lbl_guide_item2: "• Panjang Mad Asli yang sering terseret lebih dari 2 ketukan.",
+                lbl_guide_item3: "• Kepasifan atau keaktifan anak meniru suara guru.",
+                lbl_evaluation_notes: "Catatan Perkembangan & Feedback Sesi",
+                lbl_ai_polish: "Poles Catatan Kasar dengan AI",
+                lbl_session_helper_note: "*Catatan: Mengirim form ini akan otomatis mengurangi sisa kuota murid sebanyak 1 sesi.",
+                pdf_header_title: "LAPORAN DETAIL EVALUASI BELAJAR MENGAJI",
+                pdf_guide_text1: "Siswa baru dapat melafalkan huruf-huruf sederhana.",
+                pdf_guide_text2: "Mampu melafalkan huruf dengan ketukan tempo lambat.",
+                pdf_guide_text3: "Mulai konsisten makhraj dasar, perlu bimbingan tajwid.",
+                pdf_guide_text4: "Membaca lancar dengan tajwid mendasar yang stabil.",
+                pdf_guide_text5: "Pelafalan murni, tajwid konsisten, adab yang prima sepanjang sesi belajar."
+            },
+            en: {
+                app_title: "Quran",
+                app_subtitle: "Private Quran Database with Teacher Hasan Kamal",
+                parent_report: "Parent Portal",
+                parent_access_badge: "Use Access Code",
+                parent_code_label: "Your Child's Unique Code",
+                parent_placeholder: "Example: ahmad-fathoni-77",
+                parent_btn_access: "Access Progress Report",
+                parent_desc: "Enter the unique code provided by the tutor to view remaining package sessions, concrete pronunciation achievements, and daily progress logs.",
+                teacher_access: "Teacher Portal",
+                teacher_password_placeholder: "Password...",
+                btn_login_submit: "Login",
+                logout_btn: "Exit Portal",
+                tab_database: "Students & Achievements",
+                tab_curriculum: "Milestone & Target",
+                tab_journal: "Daily Journal",
+                student_list_title: "Student Database",
+                add_student_btn: "Register New Student",
+                add_student_title: "New Student Registration",
+                add_student_desc: "Complete the fields below to add a new private student to the database.",
+                lbl_full_name: "Full Name",
+                lbl_age: "Student Age",
+                lbl_parent_name: "Parent / Guardian Name",
+                lbl_whatsapp: "WhatsApp No.",
+                lbl_custom_code: "Unique Parent Access Code (Custom)",
+                lbl_custom_code_hint: "Leave blank to auto-generate code.",
+                lbl_start_book: "Starting Book/Volume",
+                lbl_start_page: "Starting Page",
+                lbl_target_page: "Target Page",
+                lbl_skills_init: "Competency Metrics (0 - 100)",
+                lbl_makhraj: "Makhraj (Pronunciation)",
+                lbl_tajwid: "Tajwid (Rules)",
+                lbl_tahsin: "Tahsin (Melody)",
+                lbl_fluency: "Reading Fluency",
+                lbl_adab: "Adab & Focus",
+                lbl_start_notes: "Initial Diagnostics Notes",
+                btn_save_student: "Save Student Profile",
+                btn_cancel: "Cancel",
+                lbl_student_id: "Student ID",
+                lbl_joined_since: "Joined Since",
+                lbl_report_pdf_notes: "Notes for Student",
+                lbl_report_pdf_potential: "Tutor's Recommendation",
+                lbl_main_evaluation: "Core Diagnostics & Challenges",
+                lbl_journal_history: "Session Journal History",
+                lbl_curriculum_program: "Milestone Curriculum Track",
+                lbl_select_student: "Select Student",
+                lbl_completed_sessions: "Sessions Held",
+                lbl_session_num: "Session Meeting No.",
+                lbl_current_material: "Active Book/Vol",
+                lbl_latest_page: "Latest Page / Verse",
+                lbl_fluency_rating: "Fluency Rating",
+                lbl_session_date: "Session Date",
+                lbl_pdf_btn: "Download Report PDF",
+                lbl_curriculum_progress: "Milestone Progress Status",
+                lbl_curriculum_progress_desc: "This path is adaptive and shifts in pace depending fully on your child's natural learning speed.",
+                lbl_latest_material: "Current Quran Reading Position",
+                lbl_status_fluency: "Fluency Class",
+                lbl_target_curriculum: "Active Milestone Target",
+                lbl_potential_dev: "Development Potential",
+                lbl_session_logs_title: "Daily Journal Entries",
+                toast_success_save: "Daily session report saved!",
+                toast_success_student_added: "New student added successfully!",
+                toast_pdf_processing: "Generating Report PDF...",
+                toast_pdf_success: "Report PDF downloaded successfully!",
+                lbl_download_time: "Exported at",
+                lbl_student_level: "Level Category",
+                lbl_remaining_sessions: "Remaining Sessions",
+                lbl_total_sessions: "Total Package Sessions",
+                lbl_sessions_count: "Sessions",
+                lbl_package_sessions: "Total Sessions Package",
+                lbl_save_edited: "Save Changes",
+                lbl_delete_student: "Delete Student Profile",
+                lbl_confirm_delete: "Are you sure you want to delete all data of",
+                lbl_confirm_delete_extra: "All daily session log files will be permanently lost.",
+                lbl_delete_btn: "Delete Permanently",
+                lbl_add_success: "New student added successfully!",
+                lbl_edit_success: "Student profile synchronized successfully!",
+                lbl_delete_success: "Student deleted successfully!",
+                footer_text: "© 2026 Ngaji Tracker. Developing Transparent & Result-Oriented Quranic Teaching Management.",
+                curriculum_title: "Adaptive Learning Progress Alur",
+                curriculum_desc: "Every child's learning pace is unique. These milestones are flexible and adapted fully to the child's readiness, without any rigid session caps.",
+                track_iqra: "Iqra' (Beginner)",
+                track_tahsin: "Tahsin (Intermediate)",
+                track_tahfiz: "Tahfidz (Advance)",
+                phase_iqra_title: "Beginner Phase: Alphabet & Pronunciation",
+                phase_tahsin_title: "Intermediate Phase: Mad & Tajwid Rules",
+                phase_tahfiz_title: "Advance Phase: Tartil & Juz Amma Memorization",
+                journal_title: "Log Session & Progress",
+                journal_subtitle: "This report is sent instantly to parents. Each session submission automatically deducts 1 session from the student's package quota.",
+                lbl_btn_submit_journal: "Submit Report & Update Session",
+                lbl_guide_title: " Tutors Specific Observation Guide",
+                lbl_guide_desc: "Parents highly value objectivity. Avoid copying the exact same templates weekly. Focus evaluation on:",
+                lbl_guide_item1: "• Bold and thin pronunciations of Kha, Ghon, Qof, Dhad.",
+                lbl_guide_item2: "• Mad Asli length consistency that gets dragged over 2 counts.",
+                lbl_guide_item3: "• Active copycat feedback and responsiveness of the student.",
+                lbl_evaluation_notes: "Progress Note & Session Feedback",
+                lbl_ai_polish: "Polish Rough Notes with AI",
+                lbl_session_helper_note: "*Note: Submitting this form automatically deducts 1 remaining session from the package quota.",
+                pdf_header_title: "QURAN LESSONS DETAILED EVALUATION REPORT",
+                pdf_guide_text1: "Student is newly beginning to pronouce simple letters.",
+                pdf_guide_text2: "Capable of pronouncing basic alphabets on slow tempos.",
+                pdf_guide_text3: "Starts basic pronunciation consistency, needs tajwid guides.",
+                pdf_guide_text4: "Smooth reading with basic stable tajwid and stop rules.",
+                pdf_guide_text5: "Flawless reading, consistent tajwid rules, and excellent classroom focus."
+            }
+        };
+
+        function t(key) {
+            return translations[currentLang][key] || key;
+        }
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            
+            if (lang === 'id') {
+                document.getElementById('langBtnID').className = "px-2 py-1 text-[10px] font-bold rounded transition-all bg-emerald-700 text-white";
+                document.getElementById('langBtnEN').className = "px-2 py-1 text-[10px] font-bold rounded transition-all text-emerald-300 hover:text-white";
+            } else {
+                document.getElementById('langBtnID').className = "px-2 py-1 text-[10px] font-bold rounded transition-all text-emerald-300 hover:text-white";
+                document.getElementById('langBtnEN').className = "px-2 py-1 text-[10px] font-bold rounded transition-all bg-emerald-700 text-white";
+            }
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[currentLang][key]) {
+                    el.innerHTML = translations[currentLang][key];
+                }
+            });
+
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (translations[currentLang][key]) {
+                    el.setAttribute('placeholder', translations[currentLang][key]);
+                }
+            });
+
+            // Translate Static Elements in PDF Layout
+            document.getElementById('pdfHeaderTitle').innerText = t('pdf_header_title');
+            document.getElementById('pdfLabelName').innerText = t('lbl_full_name');
+            document.getElementById('pdfLabelAge').innerText = t('lbl_age');
+            document.getElementById('pdfLabelLevel').innerText = t('lbl_student_level');
+            document.getElementById('pdfLabelMateri').innerText = t('lbl_latest_material');
+            document.getElementById('pdfLabelParent').innerText = t('lbl_parent_name');
+            document.getElementById('pdfLabelSesi').innerText = t('pdfLabelSesi');
+            
+            document.getElementById('pdfLabelLulus').innerText = t('pdfLabelLulus');
+            document.getElementById('pdfLabelKeliru').innerText = t('pdfLabelKeliru');
+            
+            document.getElementById('pdfMakhrajText').innerText = t('lbl_makhraj');
+            document.getElementById('pdfTajwidText').innerText = t('lbl_tajwid');
+            document.getElementById('pdfTahsinText').innerText = t('lbl_tahsin');
+            document.getElementById('pdfKelancaranText').innerText = t('lbl_fluency');
+            document.getElementById('pdfAdabText').innerText = t('lbl_adab');
+
+            document.getElementById('pdfGuideText1').innerText = t('pdf_guide_text1');
+            document.getElementById('pdfGuideText2').innerText = t('pdf_guide_text2');
+            document.getElementById('pdfGuideText3').innerText = t('pdf_guide_text3');
+            document.getElementById('pdfGuideText4').innerText = t('pdf_guide_text4');
+            document.getElementById('pdfGuideText5').innerText = t('pdf_guide_text5');
+
+            document.getElementById('pdfSiswaCatatanTitle').innerText = t('lbl_report_pdf_notes');
+            document.getElementById('pdfSiswaPotensiTitle').innerText = t('lbl_report_pdf_potential');
+            document.getElementById('pdfNoticeText').innerText = t('pdfNoticeText');
+            document.getElementById('pdfSignatureTitle').innerText = t('pdfSignatureTitle');
+
+            initApp();
+        }
+
+        // =========================================================================
+        // 2. DATABASE LOKAL & STATE MANAGEMENT (12 SESSIONS EACH EXCLUSIVELY)
+        // =========================================================================
+        const TEACHER_PASSWORD_VAL = "guru";
+
+        // Curriculum tracks exclusively split into 12 sessions each
+        const curriculumTracks = {
+            iqra: [
+                { id: 1, range: "Sesi 1", title: "Makhraj Huruf Alif - Kho", detail: "Fokus melafalkan huruf dasar secara tunggal dan bersih.", method: "Demonstrasi cermin kecil untuk bentuk mulut." },
+                { id: 2, range: "Sesi 2", title: "Makhraj Huruf Dal - Dhad", detail: "Ketepatan getaran lidah bagian samping saat bersentuhan.", method: "Latihan meniru berulang dengan ketukan tempo konstan." },
+                { id: 3, range: "Sesi 3", title: "Makhraj Huruf Tho - Kaf", detail: "Menstabilkan makhraj bagian tengah langit-langit mulut.", method: "Guru melafalkan acak dan murid menunjuk kartu huruf." },
+                { id: 4, range: "Sesi 4", title: "Makhraj Huruf Lam - Ya", detail: "Melengkapi pelafalan seluruh 28 huruf hijaiyah tunggal.", method: "Tes acak urutan huruf maju dan mundur." },
+                { id: 5, range: "Sesi 5", title: "Harakat Pendek Fathah", detail: "Membaca vokal pendek durasi murni satu ketukan.", method: "Gunakan isyarat kepalan tangan bergantian." },
+                { id: 6, range: "Sesi 6", title: "Harakat Kasrah & Dhammah", detail: "Membaca vokal pendek i dan u secara bersih tanpa ditarik panjang.", method: "Kontras visual bunyi a - i - u." },
+                { id: 7, range: "Sesi 7", title: "Harakat Tanwin Fathatain", detail: "Membaca bunyi dengung 'an' di akhir kalimat.", method: "Penekanan ketukan tepat saat tanwin diucapkan." },
+                { id: 8, range: "Sesi 8", title: "Harakat Tanwin Kasratain & Dhammatain", detail: "Membaca bunyi dengung 'in' dan 'un' secara bersih.", method: "Melafalkan rangkaian kata sederhana berharakat ganda." },
+                { id: 9, range: "Sesi 9", title: "Pengenalan Huruf Sambung Awal", detail: "Mengidentifikasi perubahan kepala huruf saat disambung di depan.", method: "Latihan visual menulis garis hubung antar huruf." },
+                { id: 10, range: "Sesi 10", title: "Huruf Sambung Tengah & Akhir", detail: "Mengidentifikasi letak titik pembeda huruf saat berada di tengah.", method: "Menebak huruf asli dari potongan gambar kata bersambung." },
+                { id: 11, range: "Sesi 11", title: "Mad Asli / Thabi'i (Pendahuluan)", detail: "Aturan memanjangkan bacaan 2 ketukan murni.", method: "Menggunakan ayunan ketukan meja yang konstan." },
+                { id: 12, range: "Sesi 12", title: "Evaluasi Komprehensif Tingkat Iqra'", detail: "Membaca mandiri baris kombinasi huruf bersambung & vokal.", method: "Tes membaca 2 halaman acak buku Iqra tanpa bimbingan." }
+            ],
+            tahsin: [
+                { id: 1, range: "Sesi 1", title: "Penyempurnaan Mad Asli (Panjang 2 Ketukan)", detail: "Konsistensi panjang saat bertemu alif, ya, wawu mati.", method: "Isyarat mengayunkan tangan ke atas dan ke bawah." },
+                { id: 2, range: "Sesi 2", title: "Hukum Izhar Halqi", detail: "Nun sukun/tanwin dibaca jelas saat bertemu huruf tenggorokan.", method: "Membaca tanpa dengung hidung secara bersih." },
+                { id: 3, range: "Sesi 3", title: "Hukum Idgham Bighunnah", detail: "Memasukkan bunyi serta mendengung selama 2 ketukan.", method: "Menahan dengung di pangkal hidung." },
+                { id: 4, range: "Sesi 4", title: "Hukum Idgham Bilaghunnah", detail: "Memasukkan bunyi tanpa dengung secara langsung.", method: "Transisi kilat bunyi ke huruf Lam atau Ra." },
+                { id: 5, range: "Sesi 5", title: "Hukum Ikhfa Haqiqi", detail: "Menyamarkan bunyi Nun sukun dengan dengung lembut.", method: "Menyesuaikan bentuk mulut ke huruf berikutnya." },
+                { id: 6, range: "Sesi 6", title: "Hukum Iqlab", detail: "Mengubah bunyi Nun mati menjadi Mim saat bertemu Ba.", method: "Mengatupkan bibir secara ringan tanpa penekanan keras." },
+                { id: 7, range: "Sesi 7", title: "Hukum Qalqalah Sughra", detail: "Pantulan bunyi tipis di tengah kata.", method: "Menirukan pantulan renyah alami." },
+                { id: 8, range: "Sesi 8", title: "Hukum Qalqalah Kubra", detail: "Pantulan tebal di akhir ayat saat waqaf.", method: "Menekan nafas lebih kuat sebelum memantulkan suara." },
+                { id: 9, range: "Sesi 9", title: "Alif Lam Qamariyah", detail: "Pelafalan Alif Lam secara jelas dan terang.", method: "Pembacaan lurus tanpa disamarkan." },
+                { id: 10, range: "Sesi 10", title: "Alif Lam Syamsiyah", detail: "Meleburkan bunyi Alif Lam langsung ke huruf bertasydid.", method: "Penekanan vokal langsung melompati huruf Lam." },
+                { id: 11, range: "Sesi 11", title: "Mad Arid Lissukun", detail: "Hukum memanjangkan akhir ayat secara opsional.", method: "Latihan memilih tempo seragam (2, 4, atau 6 ketukan)." },
+                { id: 12, range: "Sesi 12", title: "Evaluasi Tajwid Komprehensif", detail: "Penerapan seluruh hukum bacaan pada potongan ayat Al-Qur'an.", method: "Menyimak bacaan 1 halaman mushaf dengan sistem interupsi tajwid." }
+            ],
+            tahfiz: [
+                { id: 1, range: "Sesi 1", title: "Hafalan Surah An-Nas & Al-Falaq", detail: "Pelafalan tartil dan hafal dengan tajwid presisi.", method: "Metode Talqin berulang baris demi baris." },
+                { id: 2, range: "Sesi 2", title: "Hafalan Surah Al-Ikhlas & Al-Lahab", detail: "Penekanan qalqalah kubra di akhir surah Al-Lahab.", method: "Menghafal dengan isyarat hitungan jari." },
+                { id: 3, range: "Sesi 3", title: "Hafalan Surah An-Nasr & Al-Kafirun", detail: "Menjaga mad jaiz munfasil pada surah Al-Kafirun.", method: "Pemisahan ketukan mad yang konsisten." },
+                { id: 4, range: "Sesi 4", title: "Hafalan Surah Al-Kautsar & Al-Ma'un", detail: "Hukum tajwid mim sukun pada Al-Ma'un.", method: "Latihan murattal bersama tempo lambat." },
+                { id: 5, range: "Sesi 5", title: "Hafalan Surah Quraisy & Al-Fil", detail: "Menjaga kualitas huruf tebal Shad dan Tho.", method: "Pemberian tanda visual tebal pada salinan surah." },
+                { id: 6, range: "Sesi 6", title: "Hafalan Surah Al-Humazah & Al-Asr", detail: "Konsistensi ghunnah tasydid pada Al-Humazah.", method: "Menahan ketukan dengung mim/nun bertasydid." },
+                { id: 7, range: "Sesi 7", title: "Hafalan Surah At-Takatsur & Al-Qari'ah", detail: "Kelancaran qiraat bertajwid pada surah Al-Qari'ah.", method: "Menyamakan ketukan nafas pada ayat beruntun." },
+                { id: 8, range: "Sesi 8", title: "Hafalan Surah Al-Adiyat & Az-Zalzalah", detail: "Hukum idgham bighunnah pada Az-Zalzalah.", method: "Menghubungkan visual ayat dengan artinya." },
+                { id: 9, range: "Sesi 9", title: "Hafalan Surah Al-Bayyinah & Al-Qadr", detail: "Menjaga waqaf pada ayat panjang Al-Bayyinah.", method: "Teknik memenggal nafas di posisi aman." },
+                { id: 10, range: "Sesi 10", title: "Hafalan Surah Al-Alaq & At-Tin", detail: "Tajwid tartil pada ayat pertama Al-Alaq.", method: "Murattal interaktif bergantian dengan guru." },
+                { id: 11, range: "Sesi 11", title: "Hafalan Surah Al-Insyirah & Ad-Dhuha", detail: "Pelafalan mad asli dan mad wajib pada Ad-Dhuha.", method: "Evaluasi sambung ayat acak." },
+                { id: 12, range: "Sesi 12", title: "Evaluasi Kelancaran Tahfiz Juz 30", detail: "Ujian komprehensif kelancaran hafalan surah pendek pilihan.", method: "Siswa membacakan seluruh hafalan di hadapan wali secara luring." }
+            ]
+        };
+
+        // Student Database with checklist, custom packages
+        let students = [
+            {
+                id: 1,
+                uniqueCode: "ahmad-fathoni-77",
+                name: "Ahmad Fathoni",
+                age: "11 Tahun",
+                learningLevel: "Tahsin (Intermediate)",
+                parentName: "Bapak Hendra Fathoni",
+                parentContact: "0812-3456-7890",
+                joinDate: "12 Januari 2026",
+                currentBook: "Iqra Jilid 4",
+                currentPage: 15,
+                targetPage: 30,
+                
+                // Package & Quota Tracker
+                packageSessions: 12,      // Total sessions in active package
+                completedSessions: 5,    // Completed sessions
+
+                // Concrete Achievements Lists
+                passedHuruf: ["Alif", "Ba", "Ta", "Tsa", "Ja", "Ha", "Dal", "Dzal", "Ra"],
+                needPracticeHuruf: ["Kho (خ) sering tertukar Ha", "Dhad (ض) kurang tebal", "Mad Thabi'i ketukan melar"],
+
+                avatar: "https://placehold.co/150x180/065f46/ffffff?text=AHMAD",
+                skills: { makhraj: 85, tajwid: 70, tahsin: 75, kelancaran: 80, adab: 90 },
+                catatanAnak: "Ahmad, lafalkan makhraj tebal Kho (خ) dengan mengaktifkan tenggorokan bagian atas. Jangan terburu-buru menyeret ketukan panjang ya.",
+                potensiAnak: "Kecerdasan makhraj visual sangat cepat berkembang. Daya ingat pelafalan murni sangat menonjol.",
+                importantNotes: "Sering melar dalam melafalkan Mad Thabi'i. Perlu diulang melingkari buku makhraj secara mandiri.",
+                sessionLogs: [
+                    { 
+                        date: "2026-05-28", 
+                        meetingNum: 5, 
+                        material: "Iqra Jilid 4", 
+                        page: 15, 
+                        fluency: "Lancar (B)", 
+                        notes: "Membaca huruf bersambung 3 suku kata. Makhraj murni, tapi konsistensi mad perlu ditekankan lagi."
+                    },
+                    { 
+                        date: "2026-05-21", 
+                        meetingNum: 4, 
+                        material: "Iqra Jilid 4", 
+                        page: 10, 
+                        fluency: "Lancar (B)", 
+                        notes: "Melatih panjang pendek Mad Thabi'i awal jilid 4 dengan gerakan ketukan tangan."
+                    }
+                ]
+            }
+        ];
+
+        let currentView = 'hub'; 
+        let currentTeacherTab = 'tab-database'; 
+        let currentCurriculumTrack = 'iqra'; 
+        let selectedStudentId = 1;
+        let isAddingStudent = false; 
+        let isEditingStudent = false;
+
+        let teacherRadarInstance = null;
+        let parentRadarInstance = null;
+        let studentToDeleteId = null;
+
+        function getTrackKey(level) {
+            if (level.includes('Iqra') || level.includes('Beginner')) return 'iqra';
+            if (level.includes('Tahsin') || level.includes('Intermediate')) return 'tahsin';
+            if (level.includes('Tahfiz') || level.includes('Advance') || level.includes('Tahfidz')) return 'tahfiz';
+            return 'iqra';
+        }
+
+        // =========================================================================
+        // 3. TOAST NOTIFICATION SYSTEM
+        // =========================================================================
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `p-4 rounded-xl shadow-lg border text-xs font-bold flex items-center gap-2 transform translate-y-2 opacity-0 transition-all duration-300 pointer-events-auto`;
+            
+            let bgClass = 'bg-white border-slate-200 text-slate-800';
+            let icon = '<i class="fa-solid fa-circle-info text-blue-500"></i>';
+
+            if (type === 'success') {
+                bgClass = 'bg-emerald-50 border-emerald-200 text-emerald-900';
+                icon = '<i class="fa-solid fa-circle-check text-emerald-600"></i>';
+            } else if (type === 'error') {
+                bgClass = 'bg-rose-50 border-rose-200 text-rose-900';
+                icon = '<i class="fa-solid fa-circle-exclamation text-rose-600"></i>';
+            } else if (type === 'loading') {
+                bgClass = 'bg-slate-50 border-slate-200 text-slate-800';
+                icon = '<i class="fa-solid fa-spinner animate-spin text-slate-600"></i>';
+            }
+
+            toast.innerHTML = `${icon} <span class="flex-1">${message}</span>`;
+            toast.className += ` ${bgClass}`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => { toast.remove(); }, 300);
+            }, 4000);
+        }
+
+        // =========================================================================
+        // 4. ACCESS CONTROL, AUTH & SECURITY BYPASS
+        // =========================================================================
+        function updateLayout() {
+            document.getElementById('view-hub').classList.add('hidden');
+            document.getElementById('view-teacher').classList.add('hidden');
+            document.getElementById('view-parent').classList.add('hidden');
+
+            const headerIndicator = document.getElementById('headerUserIndicator');
+            const logoutContainer = document.getElementById('logoutBtnContainer');
+
+            if (currentView === 'hub') {
+                document.getElementById('view-hub').classList.remove('hidden');
+                headerIndicator.innerHTML = '';
+                logoutContainer.innerHTML = '';
+            } else if (currentView === 'teacher') {
+                document.getElementById('view-teacher').classList.remove('hidden');
+                headerIndicator.innerHTML = `
+                    <span class="text-xs bg-emerald-900 px-3 py-1 rounded-lg border border-emerald-800 text-emerald-200 font-bold flex items-center gap-1.5">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span> ${t('teacher_access')}
+                    </span>
+                `;
+                logoutContainer.innerHTML = `
+                    <button onclick="handleLogout()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold py-1.5 px-3 rounded-lg transition-all flex items-center gap-1">
+                        <span data-i18n="logout_btn">${t('logout_btn')}</span> <i class="fa-solid fa-right-to-bracket"></i>
+                    </button>
+                `;
+                renderTeacherStudentList();
+                renderTeacherStudentDetail();
+            } else if (currentView === 'parent') {
+                document.getElementById('view-parent').classList.remove('hidden');
+                headerIndicator.innerHTML = `
+                    <span class="text-xs bg-emerald-900 px-3 py-1 rounded-lg border border-emerald-800 text-emerald-100 font-bold flex items-center gap-1.5">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span> ${t('parent_report')}
+                    </span>
+                `;
+                logoutContainer.innerHTML = `
+                    <button onclick="handleLogout()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold py-1.5 px-3 rounded-lg transition-all flex items-center gap-1">
+                        <span data-i18n="logout_btn">${t('logout_btn')}</span> <i class="fa-solid fa-house"></i>
+                    </button>
+                `;
+                renderParentReport();
+            }
+        }
+
+        function handleTeacherLogin() {
+            const pass = document.getElementById('teacherPasswordInput').value;
+            if (pass === TEACHER_PASSWORD_VAL) {
+                currentView = 'teacher';
+                showToast("Berhasil masuk ke Portal Guru! / Successfully logged into Teacher Portal!", "success");
+                document.getElementById('teacherPasswordInput').value = '';
+                updateLayout();
+            } else {
+                showToast("Sandi akses salah. / Incorrect password.", "error");
+            }
+        }
+
+        function handleParentAccess() {
+            const code = document.getElementById('parentCodeInput').value.trim();
+            const student = students.find(s => s.uniqueCode === code);
+            if (student) {
+                selectedStudentId = student.id;
+                currentView = 'parent';
+                showToast(`Laporan ditemukan! / Report found: ${student.name}`, "success");
+                document.getElementById('parentCodeInput').value = '';
+                updateLayout();
+            } else {
+                showToast("Kode laporan tidak terdaftar. / Access code not registered.", "error");
+            }
+        }
+
+        function handleLogout() {
+            currentView = 'hub';
+            isAddingStudent = false;
+            isEditingStudent = false;
+            showToast("Sesi akses ditutup. / Portal exited.", "info");
+            updateLayout();
+        }
+
+        function switchTeacherTab(tabId) {
+            currentTeacherTab = tabId;
+            document.querySelectorAll('.teacher-tab-content').forEach(content => {
+                content.classList.add('hidden');
+                content.classList.remove('block');
+            });
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById(tabId).classList.add('block');
+
+            document.querySelectorAll('.teacher-tab-btn').forEach(btn => {
+                btn.className = "teacher-tab-btn px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 rounded-t-lg transition-all flex items-center gap-2 relative";
+            });
+
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            activeBtn.className = "teacher-tab-btn px-4 py-2.5 text-xs font-bold border-b-2 border-emerald-600 text-emerald-600 bg-emerald-50/20 rounded-t-lg transition-all flex items-center gap-2 relative";
+
+            if (tabId === 'tab-database') {
+                isAddingStudent = false;
+                isEditingStudent = false;
+                renderTeacherStudentList();
+                renderTeacherStudentDetail();
+            } else if (tabId === 'tab-curriculum') {
+                const s = students.find(x => x.id === selectedStudentId);
+                if (s) {
+                    currentCurriculumTrack = getTrackKey(s.learningLevel);
+                }
+                renderCurriculumTab();
+            } else if (tabId === 'tab-journal') {
+                autoFillJournalForm();
+            }
+        }
+
+        // =========================================================================
+        // 5. GURU SUITE: DATABASE & EDITING (REMAINING SESSIONS WORKFLOW)
+        // =========================================================================
+        function getLevelBadgeHTML(level) {
+            if (level.includes('Iqra') || level.includes('Beginner')) {
+                return `<span class="text-[9px] bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded font-bold">${t('track_iqra')}</span>`;
+            }
+            if (level.includes('Tahsin') || level.includes('Intermediate')) {
+                return `<span class="text-[9px] bg-sky-50 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded font-bold">${t('track_tahsin')}</span>`;
+            }
+            return `<span class="text-[9px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded font-bold">${t('track_tahfiz')}</span>`;
+        }
+
+        function renderTeacherStudentList() {
+            const container = document.getElementById('teacherStudentList');
+            container.innerHTML = '';
+
+            students.forEach(student => {
+                const isActive = student.id === selectedStudentId && !isAddingStudent && !isEditingStudent;
+                const activeStyle = isActive 
+                    ? 'border-emerald-600 bg-emerald-50/50 ring-1 ring-emerald-500' 
+                    : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100';
+
+                const percent = Math.min(100, Math.round((student.completedSessions / student.packageSessions) * 100));
+                const remaining = student.packageSessions - student.completedSessions;
+
+                container.innerHTML += `
+                    <div onclick="selectTeacherStudent(${student.id})" class="p-3 rounded-xl border transition-all cursor-pointer ${activeStyle} flex flex-col gap-1.5">
+                        <div class="flex justify-between items-start">
+                            <h4 class="font-bold text-xs text-slate-800">${student.name}</h4>
+                            <span class="text-[9px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-bold">${student.currentBook.split(' ')[0]}</span>
+                        </div>
+                        <div class="flex justify-between items-center gap-1">
+                            ${getLevelBadgeHTML(student.learningLevel)}
+                        </div>
+                        <div class="flex items-center justify-between mt-1 text-[9px] font-bold text-slate-500">
+                            <span>${t('lbl_remaining_sessions')}: ${remaining} ${t('lbl_sessions_count')}</span>
+                            <span class="font-mono">${student.completedSessions}/${student.packageSessions}</span>
+                        </div>
+                        <div class="w-full h-1 bg-slate-200 rounded-full overflow-hidden">
+                            <div class="bg-emerald-600 h-full rounded-full" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function selectTeacherStudent(id) {
+            selectedStudentId = id;
+            isAddingStudent = false;
+            isEditingStudent = false;
+            renderTeacherStudentList();
+            renderTeacherStudentDetail();
+        }
+
+        function showAddStudentForm() {
+            isAddingStudent = true;
+            isEditingStudent = false;
+            renderTeacherStudentList(); 
+            renderTeacherStudentDetail(); 
+        }
+
+        function toggleEditStudentProfile(id) {
+            selectedStudentId = id;
+            isEditingStudent = true;
+            isAddingStudent = false;
+            renderTeacherStudentList();
+            renderTeacherStudentDetail();
+        }
+
+        function submitNewStudent() {
+            const name = document.getElementById('newStudentName').value.trim();
+            const age = document.getElementById('newStudentAge').value.trim();
+            const learningLevel = document.getElementById('newStudentLevel').value;
+            const parent = document.getElementById('newStudentParent').value.trim();
+            const whatsapp = document.getElementById('newStudentContact').value.trim();
+            const customCode = document.getElementById('newStudentCustomCode').value.trim();
+            const startBook = document.getElementById('newStudentBook').value.trim();
+            const startPage = parseInt(document.getElementById('newStudentPage').value) || 1;
+            const targetPage = parseInt(document.getElementById('newStudentTarget').value) || 20;
+            const packageSessions = parseInt(document.getElementById('newStudentPackage').value) || 12;
+
+            if (!name || !parent || !whatsapp) {
+                showToast("Nama, Wali, dan No WhatsApp wajib diisi! / Name, Parent name, and WhatsApp are required!", "error");
+                return;
+            }
+
+            let finalCode = customCode.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '');
+            if (!finalCode) {
+                finalCode = name.toLowerCase().replace(/\s+/g, '-') + '-' + Math.floor(Math.random() * 90 + 10);
+            }
+
+            const newStudent = {
+                id: students.length > 0 ? Math.max(...students.map(s => s.id)) + 1 : 1,
+                uniqueCode: finalCode,
+                name: name,
+                age: age || "10 Years",
+                learningLevel: learningLevel,
+                parentName: parent,
+                parentContact: whatsapp,
+                joinDate: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}),
+                currentBook: startBook || "Iqra Jilid 1",
+                currentPage: startPage,
+                targetPage: targetPage,
+                
+                packageSessions: packageSessions,
+                completedSessions: 0,
+
+                passedHuruf: ["Alif", "Ba", "Ta"],
+                needPracticeHuruf: ["Makhraj kasrah pendek", "Makhraj tenggorokan"],
+
+                avatar: `https://placehold.co/150x180/065f46/ffffff?text=${encodeURIComponent(name.substring(0, 2).toUpperCase())}`,
+                skills: { makhraj: 50, tajwid: 50, tahsin: 50, kelancaran: 50, adab: 70 },
+                catatanAnak: "Mari konsisten melatih pelafalan makhraj di rumah bersama orang tua.",
+                potensiAnak: "Potensi siap dinilai pada pertemuan-pertemuan awal.",
+                importantNotes: "Baru bergabung.",
+                sessionLogs: []
+            };
+
+            students.push(newStudent);
+            selectedStudentId = newStudent.id;
+            isAddingStudent = false;
+
+            showToast(t('toast_success_student_added'), "success");
+            initApp();
+            switchTeacherTab('tab-database');
+        }
+
+        function saveEditedStudent(id) {
+            const student = students.find(s => s.id === id);
+            if (!student) return;
+
+            student.name = document.getElementById('editStudentName').value.trim();
+            student.age = document.getElementById('editStudentAge').value.trim();
+            student.learningLevel = document.getElementById('editStudentLevel').value;
+            student.parentName = document.getElementById('editStudentParent').value.trim();
+            student.parentContact = document.getElementById('editStudentContact').value.trim();
+            student.uniqueCode = document.getElementById('editStudentCode').value.trim().toLowerCase().replace(/\s+/g, '-');
+            student.currentBook = document.getElementById('editStudentBook').value.trim();
+            student.currentPage = parseInt(document.getElementById('editStudentPage').value) || 1;
+            student.targetPage = parseInt(document.getElementById('editStudentTarget').value) || 20;
+            student.packageSessions = parseInt(document.getElementById('editStudentPackage').value) || 12;
+            student.completedSessions = parseInt(document.getElementById('editStudentCompleted').value) || 0;
+            student.importantNotes = document.getElementById('editStudentNotes').value.trim();
+
+            isEditingStudent = false;
+            showToast(t('lbl_edit_success'), "success");
+            
+            renderTeacherStudentList();
+            renderTeacherStudentDetail();
+        }
+
+        function addChecklistItem(id, listKey) {
+            const student = students.find(s => s.id === id);
+            if (!student) return;
+            const inputId = listKey === 'passedHuruf' ? 'newPassedInput' : 'newPracticeInput';
+            const value = document.getElementById(inputId).value.trim();
+            if (value) {
+                student[listKey].push(value);
+                document.getElementById(inputId).value = '';
+                renderTeacherStudentDetail();
+                showToast("Item ditambahkan / Item added", "success");
+            }
+        }
+
+        function removeChecklistItem(id, listKey, index) {
+            const student = students.find(s => s.id === id);
+            if (!student) return;
+            student[listKey].splice(index, 1);
+            renderTeacherStudentDetail();
+        }
+
+        function openDeleteModal(id) {
+            const student = students.find(s => s.id === id);
+            if (!student) return;
+            studentToDeleteId = id;
+            document.getElementById('deleteStudentNameText').innerText = student.name;
+            document.getElementById('deleteConfirmModal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteConfirmModal').classList.add('hidden');
+            studentToDeleteId = null;
+        }
+
+        function executeDeleteStudent() {
+            if (!studentToDeleteId) return;
+            students = students.filter(s => s.id !== studentToDeleteId);
+            if (selectedStudentId === studentToDeleteId) {
+                selectedStudentId = students.length > 0 ? students[0].id : null;
+            }
+            closeDeleteModal();
+            showToast(t('lbl_delete_success'), "success");
+            initApp();
+            switchTeacherTab('tab-database');
+        }
+
+        function deleteJournalLog(studentId, logIndex) {
+            const student = students.find(s => s.id === studentId);
+            if (!student) return;
+            student.sessionLogs.splice(logIndex, 1);
+            // Restore sessions count
+            if (student.completedSessions > 0) {
+                student.completedSessions -= 1;
+            }
+            showToast("Log jurnal sesi berhasil terhapus! / Daily progress log deleted!", "success");
+            renderTeacherStudentList();
+            renderTeacherStudentDetail();
+        }
+
+        function renderTeacherStudentDetail() {
+            const container = document.getElementById('teacherStudentDetail');
+
+            if (isAddingStudent) {
+                // Populate options for 1-24 package sessions
+                let optionsHtml = '';
+                for (let i = 1; i <= 24; i++) {
+                    optionsHtml += `<option value="${i}" ${i === 12 ? 'selected' : ''}>${i} ${t('lbl_sessions_count')}</option>`;
+                }
+
+                container.innerHTML = `
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-5 animate-fadeIn">
+                        <div class="border-b border-slate-100 pb-3">
+                            <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-user-plus text-emerald-600"></i> <span data-i18n="add_student_title">${t('add_student_title')}</span>
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-0.5" data-i18n="add_student_desc">${t('add_student_desc')}</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1" data-i18n="lbl_full_name">${t('lbl_full_name')}</label>
+                                <input id="newStudentName" type="text" required placeholder="Contoh: Muhammad Ali" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-semibold text-slate-800">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1" data-i18n="lbl_age">${t('lbl_age')}</label>
+                                <input id="newStudentAge" type="text" placeholder="Contoh: 10 Tahun" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-semibold text-slate-800">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1" data-i18n="lbl_student_level">${t('lbl_student_level')}</label>
+                                <select id="newStudentLevel" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-semibold text-slate-800">
+                                    <option value="Iqra' (Beginner)">Iqra' (Beginner)</option>
+                                    <option value="Tahsin (Intermediate)">Tahsin (Intermediate)</option>
+                                    <option value="Tahfiz (Advance)">Tahfiz (Advance)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1" data-i18n="lbl_parent_name">${t('lbl_parent_name')}</label>
+                                <input id="newStudentParent" type="text" required placeholder="Contoh: Ibu Fatimah" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-semibold text-slate-800">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1" data-i18n="lbl_whatsapp">${t('lbl_whatsapp')}</label>
+                                <input id="newStudentContact" type="text" required placeholder="Contoh: 0812345678" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-semibold text-slate-800">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1" data-i18n="lbl_package_sessions">${t('lbl_package_sessions')}</label>
+                                <select id="newStudentPackage" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-semibold text-slate-800">
+                                    ${optionsHtml}
+                                </select>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block font-bold text-slate-600 mb-0.5" data-i18n="lbl_custom_code">${t('lbl_custom_code')}</label>
+                                <span class="text-[10px] text-slate-400 block mb-1" data-i18n="lbl_custom_code_hint">${t('lbl_custom_code_hint')}</span>
+                                <input id="newStudentCustomCode" type="text" placeholder="Contoh: ali-privat-muda" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-bold text-slate-800">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1" data-i18n="lbl_start_book">${t('lbl_start_book')}</label>
+                                <input id="newStudentBook" type="text" placeholder="Contoh: Iqra Jilid 1" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-semibold text-slate-800">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block font-bold text-slate-600 mb-1" data-i18n="lbl_start_page">${t('lbl_start_page')}</label>
+                                    <input id="newStudentPage" type="number" value="1" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-semibold text-slate-800">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-600 mb-1" data-i18n="lbl_target_page">${t('lbl_target_page')}</label>
+                                    <input id="newStudentTarget" type="number" value="20" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-semibold text-slate-800">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1" data-i18n="lbl_start_notes">${t('lbl_start_notes')}</label>
+                            <textarea id="newStudentNotes" rows="2" placeholder="..." class="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none font-medium text-slate-700 bg-slate-50 text-xs"></textarea>
+                        </div>
+
+                        <div class="flex gap-2 justify-end text-xs font-bold pt-2 border-t border-slate-100">
+                            <button onclick="switchTeacherTab('tab-database')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 px-4 rounded-xl transition-all" data-i18n="btn_cancel">${t('btn_cancel')}</button>
+                            <button onclick="submitNewStudent()" class="bg-emerald-700 hover:bg-emerald-800 text-white py-2.5 px-4 rounded-xl transition-all shadow" data-i18n="btn_save_student">${t('btn_save_student')}</button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const student = students.find(s => s.id === selectedStudentId);
+            if (!student) {
+                container.innerHTML = `
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center text-slate-400 text-xs animate-fadeIn">
+                        <i class="fa-solid fa-users text-4xl mb-3 block text-slate-200"></i>
+                        Select or register a student to manage details.
+                    </div>
+                `;
+                return;
+            }
+
+            if (isEditingStudent) {
+                let optionsHtml = '';
+                for (let i = 1; i <= 24; i++) {
+                    optionsHtml += `<option value="${i}" ${student.packageSessions === i ? 'selected' : ''}>${i} ${t('lbl_sessions_count')}</option>`;
+                }
+
+                container.innerHTML = `
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-5 animate-fadeIn">
+                        <div class="border-b border-slate-100 pb-3">
+                            <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-user-gear text-emerald-600"></i> <span>Edit Profil Murid: ${student.name}</span>
+                            </h2>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1" data-i18n="lbl_full_name">${t('lbl_full_name')}</label>
+                                <input id="editStudentName" type="text" required value="${student.name}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-semibold text-slate-800">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1" data-i18n="lbl_age">${t('lbl_age')}</label>
+                                <input id="editStudentAge" type="text" value="${student.age}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-semibold text-slate-800">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1" data-i18n="lbl_student_level">${t('lbl_student_level')}</label>
+                                <select id="editStudentLevel" onchange="updateStudentLevel(this.value)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-semibold text-slate-800">
+                                    <option value="Iqra' (Beginner)" ${student.learningLevel.includes('Iqra') ? 'selected' : ''}>Iqra' (Beginner)</option>
+                                    <option value="Tahsin (Intermediate)" ${student.learningLevel.includes('Tahsin') ? 'selected' : ''}>Tahsin (Intermediate)</option>
+                                    <option value="Tahfiz (Advance)" ${student.learningLevel.includes('Tahfiz') ? 'selected' : ''}>Tahfiz (Advance)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1" data-i18n="lbl_parent_name">${t('lbl_parent_name')}</label>
+                                <input id="editStudentParent" type="text" required value="${student.parentName}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-semibold text-slate-800">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1" data-i18n="lbl_whatsapp">${t('lbl_whatsapp')}</label>
+                                <input id="editStudentContact" type="text" required value="${student.parentContact}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-semibold text-slate-800">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1" data-i18n="parent_code_label">${t('parent_code_label')}</label>
+                                <input id="editStudentCode" type="text" required value="${student.uniqueCode}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-bold text-slate-800">
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1" data-i18n="lbl_start_book">${t('lbl_start_book')}</label>
+                                <input id="editStudentBook" type="text" value="${student.currentBook}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-semibold text-slate-800">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block font-bold text-slate-600 mb-1" data-i18n="lbl_start_page">${t('lbl_start_page')}</label>
+                                    <input id="editStudentPage" type="number" value="${student.currentPage}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-semibold text-slate-800">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-600 mb-1" data-i18n="lbl_target_page">${t('lbl_target_page')}</label>
+                                    <input id="editStudentTarget" type="number" value="${student.targetPage}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-semibold text-slate-800">
+                                </div>
+                            </div>
+                            <!-- QUOTA PACKAGE SECTION -->
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1" data-i18n="lbl_package_sessions">${t('lbl_package_sessions')}</label>
+                                <select id="editStudentPackage" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-semibold text-slate-800">
+                                    ${optionsHtml}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1" data-i18n="lbl_completed_sessions">${t('lbl_completed_sessions')}</label>
+                                <input id="editStudentCompleted" type="number" value="${student.completedSessions}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white font-semibold text-slate-800">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1" data-i18n="lbl_main_evaluation">${t('lbl_main_evaluation')}</label>
+                            <textarea id="editStudentNotes" rows="3" class="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none font-medium text-slate-700 bg-slate-50 text-xs">${student.importantNotes}</textarea>
+                        </div>
+
+                        <div class="flex gap-2 justify-end text-xs font-bold pt-2 border-t border-slate-100">
+                            <button onclick="isEditingStudent = false; renderTeacherStudentDetail();" class="bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 px-4 rounded-xl transition-all" data-i18n="btn_cancel">${t('btn_cancel')}</button>
+                            <button onclick="saveEditedStudent(${student.id})" class="bg-emerald-700 hover:bg-emerald-800 text-white py-2.5 px-4 rounded-xl transition-all shadow" data-i18n="lbl_save_edited">${t('lbl_save_edited')}</button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            let logsHtml = '';
+            if (student.sessionLogs.length === 0) {
+                logsHtml = `<div class="text-center py-6 text-slate-400 text-xs" data-i18n="lbl_no_logs">Belum ada catatan jurnal mengajar. / No journal entries yet.</div>`;
+            } else {
+                student.sessionLogs.forEach((log, index) => {
+                    logsHtml += `
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs flex flex-col gap-1.5 animate-fadeIn">
+                            <div class="flex justify-between items-center">
+                                <span class="font-bold text-slate-700">${log.material} • Hal. ${log.page} (${t('lbl_session_num')} ${log.meetingNum})</span>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="deleteJournalLog(${student.id}, ${index})" class="text-rose-500 hover:text-rose-700 p-1 rounded transition-all">
+                                        <i class="fa-solid fa-trash text-[10px]"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-slate-600 italic">"${log.notes}"</p>
+                        </div>
+                    `;
+                });
+            }
+
+            // Generate passed list & practicing lists
+            let passedListHtml = '';
+            student.passedHuruf.forEach((val, idx) => {
+                passedListHtml += `
+                    <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2 py-1 rounded-lg">
+                        ${val} <button type="button" onclick="removeChecklistItem(${student.id}, 'passedHuruf', ${idx})" class="text-red-500 hover:text-red-700 font-extrabold ml-1">×</button>
+                    </span>
+                `;
+            });
+
+            let practiceListHtml = '';
+            student.needPracticeHuruf.forEach((val, idx) => {
+                practiceListHtml += `
+                    <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold px-2 py-1 rounded-lg">
+                        ${val} <button type="button" onclick="removeChecklistItem(${student.id}, 'needPracticeHuruf', ${idx})" class="text-red-500 hover:text-red-700 font-extrabold ml-1">×</button>
+                    </span>
+                `;
+            });
+
+            const remaining = student.packageSessions - student.completedSessions;
+
+            container.innerHTML = `
+                <!-- PROFILE HEADER -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-4 animate-fadeIn">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 pb-4 border-b border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-14 bg-emerald-800 text-emerald-100 text-lg font-bold rounded-lg shadow-sm flex items-center justify-center font-mono">
+                                ${student.name.substring(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-extrabold text-emerald-600 uppercase tracking-wider">${t('lbl_student_id')}: #${student.id}</span>
+                                <h2 class="text-xl font-bold text-slate-800">${student.name}</h2>
+                                <p class="text-xs text-slate-500 mt-0.5">${t('parent_code_label')}: <strong class="text-indigo-600">${student.uniqueCode}</strong></p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 items-center flex-wrap">
+                            <button onclick="toggleEditStudentProfile(${student.id})" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold px-3 py-2 rounded-xl border border-slate-300 transition-all flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-pen-to-square"></i> <span data-i18n="lbl_save_edited">Edit</span>
+                            </button>
+                            <button onclick="openDeleteModal(${student.id})" class="bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold p-2.5 rounded-xl border border-rose-200 transition-all shadow-sm">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <span class="text-[10px] text-slate-400 font-bold block mb-1" data-i18n="lbl_remaining_sessions">${t('lbl_remaining_sessions')}</span>
+                            <p class="font-extrabold text-emerald-800 text-sm">${remaining} ${t('lbl_sessions_count')}</p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <span class="text-[10px] text-slate-400 font-bold block mb-1" data-i18n="lbl_completed_sessions">${t('lbl_completed_sessions')}</span>
+                            <p class="font-extrabold text-slate-800 text-sm">${student.completedSessions} / ${student.packageSessions}</p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <span class="text-[10px] text-slate-400 font-bold block mb-1" data-i18n="lbl_parent_name">${t('lbl_parent_name')}</span>
+                            <p class="font-bold text-slate-700">${student.parentName}</p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <span class="text-[10px] text-slate-400 font-bold block mb-1" data-i18n="lbl_whatsapp">${t('lbl_whatsapp')}</span>
+                            <p class="font-bold text-emerald-700">${student.parentContact}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHECKLIST CAPAIAN KONKRET -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-4 animate-fadeIn">
+                    <div class="border-b border-slate-100 pb-2">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-list-check text-emerald-600"></i> <span data-i18n="pdfLabelLulus">Checklist Evaluasi & Capaian Konkret Murid</span>
+                        </h3>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- LULUS -->
+                        <div class="border border-emerald-100 p-4 rounded-xl bg-emerald-50/10 flex flex-col gap-3">
+                            <span class="text-xs font-bold text-emerald-950 flex items-center gap-1"><i class="fa-solid fa-circle-check text-emerald-600"></i> <span data-i18n="pdfLabelLulus">Huruf Sudah Lulus</span></span>
+                            <div class="flex flex-wrap gap-1.5" id="passedChecklistWrapper">
+                                ${passedListHtml || '<span class="text-[11px] text-slate-400 italic">No letters added</span>'}
+                            </div>
+                            <div class="flex gap-2 mt-2">
+                                <input id="newPassedInput" type="text" placeholder="Aa, Ba..." class="flex-1 px-3 py-1 text-xs border rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                                <button type="button" onclick="addChecklistItem(${student.id}, 'passedHuruf')" class="bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-bold py-1 px-3 rounded-lg transition-all">+</button>
+                            </div>
+                        </div>
+
+                        <!-- BUTUH DIULANG -->
+                        <div class="border border-amber-100 p-4 rounded-xl bg-amber-50/10 flex flex-col gap-3">
+                            <span class="text-xs font-bold text-amber-950 flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation text-amber-600"></i> <span data-i18n="pdfLabelKeliru">Huruf Sering Keliru</span></span>
+                            <div class="flex flex-wrap gap-1.5" id="practiceChecklistWrapper">
+                                ${practiceListHtml || '<span class="text-[11px] text-slate-400 italic">No letters added</span>'}
+                            </div>
+                            <div class="flex gap-2 mt-2">
+                                <input id="newPracticeInput" type="text" placeholder="Kho..." class="flex-1 px-3 py-1 text-xs border rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500">
+                                <button type="button" onclick="addChecklistItem(${student.id}, 'needPracticeHuruf')" class="bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-bold py-1 px-3 rounded-lg transition-all">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- METRIK PENILAIAN & SPIDER CHART EDITOR -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-6 animate-fadeIn">
+                    <div class="border-b border-slate-100 pb-2">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-emerald-600"></i> <span data-i18n="lbl_skills_init">Asesmen Kemampuan</span>
+                        </h3>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                        <div class="md:col-span-7 flex flex-col gap-3">
+                            <div class="flex flex-col gap-1">
+                                <div class="flex justify-between text-xs font-bold">
+                                    <span class="text-slate-600" data-i18n="lbl_makhraj">${t('lbl_makhraj')}</span>
+                                    <span id="labelSkillMakhraj" class="text-emerald-700 font-mono">${student.skills.makhraj}</span>
+                                </div>
+                                <input type="range" min="10" max="100" value="${student.skills.makhraj}" oninput="updateSkillScore('makhraj', this.value)" class="w-full accent-emerald-600 h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <div class="flex justify-between text-xs font-bold">
+                                    <span class="text-slate-600" data-i18n="lbl_tajwid">${t('lbl_tajwid')}</span>
+                                    <span id="labelSkillTajwid" class="text-emerald-700 font-mono">${student.skills.tajwid}</span>
+                                </div>
+                                <input type="range" min="10" max="100" value="${student.skills.tajwid}" oninput="updateSkillScore('tajwid', this.value)" class="w-full accent-emerald-600 h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <div class="flex justify-between text-xs font-bold">
+                                    <span class="text-slate-600" data-i18n="lbl_tahsin">${t('lbl_tahsin')}</span>
+                                    <span id="labelSkillTahsin" class="text-emerald-700 font-mono">${student.skills.tahsin}</span>
+                                </div>
+                                <input type="range" min="10" max="100" value="${student.skills.tahsin}" oninput="updateSkillScore('tahsin', this.value)" class="w-full accent-emerald-600 h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <div class="flex justify-between text-xs font-bold">
+                                    <span class="text-slate-600" data-i18n="lbl_fluency">${t('lbl_fluency')}</span>
+                                    <span id="labelSkillKelancaran" class="text-emerald-700 font-mono">${student.skills.kelancaran}</span>
+                                </div>
+                                <input type="range" min="10" max="100" value="${student.skills.kelancaran}" oninput="updateSkillScore('kelancaran', this.value)" class="w-full accent-emerald-600 h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <div class="flex justify-between text-xs font-bold">
+                                    <span class="text-slate-600" data-i18n="lbl_adab">${t('lbl_adab')}</span>
+                                    <span id="labelSkillAdab" class="text-emerald-700 font-mono">${student.skills.adab}</span>
+                                </div>
+                                <input type="range" min="10" max="100" value="${student.skills.adab}" oninput="updateSkillScore('adab', this.value)" class="w-full accent-emerald-600 h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-5 flex flex-col items-center justify-center bg-slate-50 p-4 border border-slate-100 rounded-2xl h-64">
+                            <canvas id="teacherRadarChart" class="max-h-56 max-w-full"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                        <div class="flex flex-col gap-1.5">
+                            <label class="font-bold text-slate-600" data-i18n="lbl_report_pdf_notes">${t('lbl_report_pdf_notes')}</label>
+                            <textarea id="teacherCatatanAnak" rows="2" oninput="updateRaportField('catatanAnak', this.value)" class="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none font-medium text-slate-700 bg-slate-50 text-xs">${student.catatanAnak}</textarea>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="font-bold text-slate-600" data-i18n="lbl_report_pdf_potential">${t('lbl_report_pdf_potential')}</label>
+                            <textarea id="teacherPotensiAnak" rows="2" oninput="updateRaportField('potensiAnak', this.value)" class="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none font-medium text-slate-700 bg-slate-50 text-xs">${student.potensiAnak}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIWAYAT JURNAL -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                        <i class="fa-solid fa-clock-rotate-left text-slate-500"></i> <span data-i18n="lbl_journal_history">${t('lbl_journal_history')}</span>
+                    </h3>
+                    <div class="flex flex-col gap-2.5">
+                        ${logsHtml}
+                    </div>
+                </div>
+            `;
+
+            setTimeout(() => {
+                renderRadarChart('teacherRadarChart', student.skills, true);
+            }, 50);
+        }
+
+        function updateSkillScore(skillKey, value) {
+            const student = students.find(s => s.id === selectedStudentId);
+            if (!student) return;
+
+            const intVal = parseInt(value);
+            student.skills[skillKey] = intVal;
+
+            const capitalizedKey = skillKey.charAt(0).toUpperCase() + skillKey.slice(1);
+            const labelEl = document.getElementById(`labelSkill${capitalizedKey}`);
+            if (labelEl) labelEl.innerText = intVal;
+
+            if (teacherRadarInstance) {
+                teacherRadarInstance.data.datasets[0].data = [
+                    student.skills.makhraj,
+                    student.skills.tajwid,
+                    student.skills.tahsin,
+                    student.skills.kelancaran,
+                    student.skills.adab
+                ];
+                teacherRadarInstance.update('none');
+            }
+        }
+
+        function updateRaportField(fieldKey, value) {
+            const student = students.find(s => s.id === selectedStudentId);
+            if (student) {
+                student[fieldKey] = value;
+            }
+        }
+
+        function updateStudentLevel(newLevel) {
+            const student = students.find(s => s.id === selectedStudentId);
+            if (student) {
+                student.learningLevel = newLevel;
+            }
+        }
+
+        // =========================================================================
+        // 6. ADAPTIVE CURRICULUM MILESTONES (EXCLUSIVELY 12 SESSIONS)
+        // =========================================================================
+        function switchCurriculumTrack(trackKey) {
+            currentCurriculumTrack = trackKey;
+            
+            document.getElementById('curriculumIqraWrapper').className = trackKey === 'iqra' ? 'block border border-amber-100 bg-amber-50/15 rounded-2xl p-5' : 'hidden';
+            document.getElementById('curriculumTahsinWrapper').className = trackKey === 'tahsin' ? 'block border border-sky-100 bg-sky-50/15 rounded-2xl p-5' : 'hidden';
+            document.getElementById('curriculumTahfizWrapper').className = trackKey === 'tahfiz' ? 'block border border-emerald-50/15 rounded-2xl p-5' : 'hidden';
+
+            ['iqra', 'tahsin', 'tahfiz'].forEach(k => {
+                const btn = document.getElementById(`curr-track-${k}`);
+                if (k === trackKey) {
+                    btn.className = "flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all bg-white text-emerald-950 shadow-sm";
+                } else {
+                    btn.className = "flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-950";
+                }
+            });
+
+            renderCurriculumTab();
+        }
+
+        function renderCurriculumTab() {
+            const student = students.find(s => s.id === selectedStudentId);
+            if (!student) return;
+
+            const overview = document.getElementById('curriculumOverviewBar');
+            overview.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-11 bg-emerald-800 text-white rounded border border-slate-200 flex items-center justify-center font-bold text-xs font-mono">
+                        ${student.name.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-xs font-bold text-slate-800">${student.name}</h4>
+                            ${getLevelBadgeHTML(student.learningLevel)}
+                        </div>
+                        <p class="text-[10px] text-slate-500 font-bold mt-0.5">${t('lbl_latest_material')}: <strong>${student.currentBook}</strong></p>
+                    </div>
+                </div>
+                <div class="text-[11px] font-bold text-emerald-950 bg-white border px-3 py-1.5 rounded-lg shadow-sm">
+                    12 ${t('lbl_sessions_count')} - ${t('curriculum_title')}
+                </div>
+            `;
+
+            const iqraContainer = document.getElementById('curriculumIqraContainer');
+            const tahsinContainer = document.getElementById('curriculumTahsinContainer');
+            const tahfizContainer = document.getElementById('curriculumTahfizContainer');
+
+            iqraContainer.innerHTML = '';
+            tahsinContainer.innerHTML = '';
+            tahfizContainer.innerHTML = '';
+
+            curriculumTracks.iqra.forEach((curr) => {
+                const isCurrent = student.learningLevel.includes('Iqra') || student.learningLevel.includes('Beginner');
+                iqraContainer.innerHTML += renderCurriculumCardHTML(curr, isCurrent);
+            });
+
+            curriculumTracks.tahsin.forEach((curr) => {
+                const isCurrent = student.learningLevel.includes('Tahsin') || student.learningLevel.includes('Intermediate');
+                tahsinContainer.innerHTML += renderCurriculumCardHTML(curr, isCurrent);
+            });
+
+            curriculumTracks.tahfiz.forEach((curr) => {
+                const isCurrent = student.learningLevel.includes('Tahfiz') || student.learningLevel.includes('Advance');
+                tahfizContainer.innerHTML += renderCurriculumCardHTML(curr, isCurrent);
+            });
+        }
+
+        function renderCurriculumCardHTML(curr, isCurrent) {
+            let statusBadge = '';
+            let borderStyle = '';
+            if (isCurrent) {
+                statusBadge = `<span class="bg-amber-100 text-amber-800 text-[9px] font-extrabold px-1.5 py-0.5 rounded flex items-center gap-1 animate-pulse"><i class="fa-solid fa-spinner"></i> ACTIVE</span>`;
+                borderStyle = 'border-amber-400 bg-amber-50/20 ring-1 ring-amber-400/30';
+            } else {
+                statusBadge = `<span class="bg-slate-100 text-slate-400 text-[9px] font-extrabold px-1.5 py-0.5 rounded flex items-center gap-1"><i class="fa-solid fa-compass"></i> TRACK</span>`;
+                borderStyle = 'border-slate-200 bg-white';
+            }
+
+            return `
+                <div class="p-4 rounded-2xl border transition-all flex flex-col gap-3 ${borderStyle}">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded font-mono">${curr.range}</span>
+                        ${statusBadge}
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-xs text-slate-800 leading-tight">${curr.title}</h4>
+                        <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">${curr.detail}</p>
+                    </div>
+                    <div class="pt-2 border-t border-dashed border-slate-100 text-[10px] text-slate-600 font-medium leading-relaxed">
+                        <strong class="text-slate-400 uppercase tracking-wide block mb-0.5 text-[9px]">Guide:</strong>
+                        <i class="fa-solid fa-chalkboard-user text-emerald-500 mr-1"></i> ${curr.method}
+                    </div>
+                </div>
+            `;
+        }
+
+        // =========================================================================
+        // 7. SESSIONS JOURNAL (REMAINING WORKFLOW ONLY)
+        // =========================================================================
+        function autoFillJournalForm() {
+            const select = document.getElementById('formStudentSelect');
+            select.innerHTML = '';
+            students.forEach(s => {
+                select.innerHTML += `<option value="${s.id}" ${s.id === selectedStudentId ? 'selected' : ''}>${s.name} (${s.learningLevel})</option>`;
+            });
+
+            const studentId = parseInt(select.value) || selectedStudentId;
+            const student = students.find(s => s.id === studentId);
+            if (!student) return;
+
+            document.getElementById('formMeetingNum').value = student.completedSessions + 1;
+            document.getElementById('formMateri').value = student.currentBook;
+            document.getElementById('formHalaman').value = student.currentPage;
+            document.getElementById('formKelancaran').value = "Lancar (B)";
+            document.getElementById('formTanggal').value = new Date().toISOString().split('T')[0];
+            document.getElementById('formCatatan').value = '';
+        }
+
+        function handleJournalSubmit(event) {
+            event.preventDefault();
+
+            const studentId = parseInt(document.getElementById('formStudentSelect').value);
+            const student = students.find(s => s.id === studentId);
+            if (!student) return;
+
+            // Enforce limit
+            if (student.completedSessions >= student.packageSessions) {
+                showToast("Sesi paket sudah habis! Silakan perbarui paket kuota terlebih dahulu. / Package sessions are fully completed! Please renew package.", "error");
+                return;
+            }
+
+            const date = document.getElementById('formTanggal').value;
+            const meetingNum = parseInt(document.getElementById('formMeetingNum').value);
+            const material = document.getElementById('formMateri').value;
+            const page = parseInt(document.getElementById('formHalaman').value);
+            const fluency = document.getElementById('formKelancaran').value;
+            const notes = document.getElementById('formCatatan').value;
+
+            // Save log
+            const newLog = {
+                date: date,
+                meetingNum: meetingNum,
+                material: material,
+                page: page,
+                fluency: fluency,
+                notes: notes
+            };
+
+            student.sessionLogs.unshift(newLog);
+
+            // Update stats & Automatically deduct remaining quota sessions
+            student.currentBook = material;
+            student.currentPage = page;
+            student.completedSessions += 1;
+
+            showToast(t('toast_success_save'), "success");
+            switchTeacherTab('tab-database');
+        }
+
+        // =========================================================================
+        // 8. ASISTEN INTEGRASI GEMINI AI
+        // =========================================================================
+        async function callGeminiAPI(prompt, systemInstruction) {
+            const apiKey = ""; 
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemInstruction }] }
+            };
+            
+            let delay = 1000;
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (response.ok) {
+                        const result = await response.json();
+                        const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (generatedText) return generatedText;
+                    }
+                } catch (e) {}
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2;
+            }
+            throw new Error("Layanan sibuk / AI Service busy.");
+        }
+
+        async function generateAiFeedbackFromForm() {
+            const btn = document.querySelector('button[onclick="generateAiFeedbackFromForm()"]');
+            const origHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Polishing...`;
+
+            const data = {
+                name: document.getElementById('formStudentSelect').options[document.getElementById('formStudentSelect').selectedIndex].text.split(' (')[0],
+                material: document.getElementById('formMateri').value,
+                halaman: document.getElementById('formHalaman').value,
+                kelancaran: document.getElementById('formKelancaran').value,
+                catatan: document.getElementById('formCatatan').value
+            };
+
+            const systemInstruction = currentLang === 'en' 
+                ? `You are a professional Quran private tutor. Construct the raw feedback into a concise, encouraging, and clear lesson report for the parent. Mention specific pronunciation details or letters without unnecessary generic placeholders. Do not use double asterisks or bold markdown tags.`
+                : `Kamu adalah Ustadz privat Quran yang sangat sopan dan objektif. Konstruksikan catatan kasar evaluasi dari guru menjadi kalimat ringkas, hangat, serta mudah dipahami oleh orang tua. Sebutkan nama huruf atau tajwid konkret secara spesifik tanpa basa-basi berlebih. Jangan gunakan markdown tebal.`;
+
+            const prompt = `Refine this feedback:
+Student: ${data.name}
+Material: ${data.material} (Page ${data.halaman})
+Fluency Rating: ${data.kelancaran}
+Raw Tutors Notes: "${data.catatan}"`;
+
+            try {
+                const responseText = await callGeminiAPI(prompt, systemInstruction);
+                document.getElementById('formCatatan').value = responseText.replace(/[*_#`]/g, '').trim();
+                showToast("Feedback polished successfully!", "success");
+            } catch (e) {
+                showToast("AI service is currently busy.", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+            }
+        }
+
+        // =========================================================================
+        // 9. METODE GENERATOR SPIDER CHART (CHART.JS)
+        // =========================================================================
+        function renderRadarChart(canvasId, skills, isTeacher = true) {
+            const canvasCtx = document.getElementById(canvasId).getContext('2d');
+            if (isTeacher && teacherRadarInstance) teacherRadarInstance.destroy();
+            if (!isTeacher && parentRadarInstance) parentRadarInstance.destroy();
+
+            const chartData = {
+                labels: ['Makhraj', 'Tajwid', 'Tahsin', 'Kelancaran', 'Adab'],
+                datasets: [{
+                    label: 'Performa Belajar',
+                    data: [skills.makhraj, skills.tajwid, skills.tahsin, skills.kelancaran, skills.adab],
+                    backgroundColor: 'rgba(6, 78, 59, 0.12)',
+                    borderColor: 'rgba(6, 78, 59, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(5, 150, 105, 1)',
+                    pointRadius: 3
+                }]
+            };
+
+            const options = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(148, 163, 184, 0.3)' },
+                        grid: { color: 'rgba(148, 163, 184, 0.2)' },
+                        pointLabels: {
+                            font: { size: 9, family: 'Plus Jakarta Sans', weight: 'bold' },
+                            color: '#475569'
+                        },
+                        ticks: { display: false },
+                        min: 0,
+                        max: 100
+                    }
+                }
+            };
+
+            const newChart = new Chart(canvasCtx, {
+                type: 'radar',
+                data: chartData,
+                options: options
+            });
+
+            if (isTeacher) { teacherRadarInstance = newChart; } else { parentRadarInstance = newChart; }
+        }
+
+        // =========================================================================
+        // 10. PORTAL VIEW ORANG TUA: DETAILED, DIRECT & SPECIFIC (NO MAGIC LINK BUTTON)
+        // =========================================================================
+        function renderParentReport() {
+            const student = students.find(s => s.id === selectedStudentId);
+            const container = document.getElementById('parentReportContainer');
+            if (!student) return;
+
+            // Generate checklist badges
+            let passedBadges = '';
+            student.passedHuruf.forEach(item => {
+                passedBadges += `<span class="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-1 rounded-xl font-bold text-[11px] inline-flex items-center gap-1"><i class="fa-solid fa-circle-check text-emerald-600"></i> ${item}</span>`;
+            });
+
+            let needPracticeBadges = '';
+            student.needPracticeHuruf.forEach(item => {
+                needPracticeBadges += `<span class="bg-amber-50 text-amber-800 border border-amber-200 px-2 py-1 rounded-xl font-bold text-[11px] inline-flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation text-amber-600"></i> ${item}</span>`;
+            });
+
+            const percent = Math.min(100, Math.round((student.completedSessions / student.packageSessions) * 100));
+            const remaining = student.packageSessions - student.completedSessions;
+
+            let logsHtml = '';
+            student.sessionLogs.forEach(log => {
+                const fDate = new Date(log.date).toLocaleDateString(currentLang === 'en' ? 'en-US' : 'id-ID', {
+                    day: 'numeric', month: 'long', year: 'numeric'
+                });
+
+                logsHtml += `
+                    <div class="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex flex-col gap-2 shadow-sm animate-fadeIn">
+                        <div class="flex flex-col sm:flex-row sm:justify-between gap-2 border-b border-dashed border-slate-200 pb-2">
+                            <span class="font-bold text-xs text-slate-700 flex items-center gap-1">
+                                <i class="fa-solid fa-book text-emerald-700"></i> ${t('lbl_session_num')} ${log.meetingNum} • ${log.material} • Halaman ${log.page}
+                            </span>
+                            <span class="text-[10px] font-bold text-slate-500 font-mono flex items-center gap-1">
+                                <i class="fa-solid fa-calendar-day"></i> ${fDate}
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-600 italic leading-relaxed">"${log.notes}"</p>
+                        <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 mt-1 pt-2 border-t border-slate-100">
+                            <span>${t('lbl_fluency_rating')}: <strong class="text-slate-600">${log.fluency}</strong></span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = `
+                <!-- PROFILE BANNER -->
+                <div class="bg-white p-6 rounded-3xl shadow border border-slate-200 flex flex-col gap-6">
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-slate-100 pb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-14 bg-emerald-800 text-emerald-100 font-bold rounded-xl shadow-sm flex items-center justify-center font-mono text-lg">
+                                ${student.name.substring(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-[9px] font-extrabold bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded-full uppercase tracking-wider">${t('parent_report')}</span>
+                                    ${getLevelBadgeHTML(student.learningLevel)}
+                                </div>
+                                <h2 class="text-2xl font-extrabold text-slate-900 mt-1">${student.name}</h2>
+                                <p class="text-xs text-slate-500 mt-0.5">${t('app_title')} Tutor: <strong>Ust. Hasan Kamal</strong></p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <button onclick="downloadStudentPdfReport()" class="bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow transition-all flex items-center gap-2">
+                                <i class="fa-solid fa-file-pdf text-sm"></i> <span data-i18n="lbl_pdf_btn">${t('lbl_pdf_btn')}</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TRANSPARENT QUOTA & SISA SESI MODULE -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-emerald-50/40 p-5 rounded-2xl border border-emerald-100/50 flex flex-col gap-3">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="font-bold text-emerald-950" data-i18n="lbl_total_sessions">${t('lbl_total_sessions')}</span>
+                                <span class="font-mono font-bold text-emerald-900">${student.completedSessions} / ${student.packageSessions} ${t('lbl_sessions_count')}</span>
+                            </div>
+                            <div class="h-3 bg-emerald-100 rounded-full overflow-hidden">
+                                <div class="bg-emerald-700 h-full rounded-full transition-all duration-500 shadow-sm" style="width: ${percent}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="p-5 rounded-2xl border bg-slate-50 border-slate-200 text-slate-700 flex items-center gap-4">
+                            <div class="h-10 w-10 rounded-xl bg-white flex items-center justify-center text-lg shadow-sm text-emerald-800">
+                                <i class="fa-solid fa-calendar-check"></i>
+                            </div>
+                            <div class="flex-1 text-xs">
+                                <span class="font-bold uppercase tracking-wider text-[10px] block mb-0.5 text-slate-400" data-i18n="lbl_remaining_sessions">${t('lbl_remaining_sessions')}</span>
+                                <strong class="text-sm font-extrabold text-slate-800">${remaining} ${t('lbl_sessions_count')}</strong> <span data-i18n="lbl_remaining_desc">tersisa dari paket aktif Anda.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Latar Belakang Murid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <span class="text-[10px] text-slate-400 font-bold block mb-1" data-i18n="lbl_latest_material">${t('lbl_latest_material')}</span>
+                            <p class="font-bold text-slate-800">${student.currentBook} • Halaman ${student.currentPage}</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <span class="text-[10px] text-slate-400 font-bold block mb-1" data-i18n="lbl_status_fluency">${t('lbl_status_fluency')}</span>
+                            <p class="font-bold text-emerald-700">${student.fluencyLevel || "Lancar (B)"}</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <span class="text-[10px] text-slate-400 font-bold block mb-1" data-i18n="lbl_target_page">${t('lbl_target_page')}</span>
+                            <p class="font-bold text-rose-700">${t('lbl_target_page')}: ${student.targetPage}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHECKLIST CAPAIAN KONKRET -->
+                <div class="bg-white p-6 rounded-3xl shadow border border-slate-200 flex flex-col gap-4">
+                    <div class="border-b border-slate-100 pb-2">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-clipboard-check text-emerald-700"></i> <span data-i18n="lbl_curriculum_progress">Laporan Detil Kemajuan Karakter Bacaan</span>
+                        </h3>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-emerald-50/20 border border-emerald-100 p-4 rounded-2xl flex flex-col gap-2">
+                            <span class="text-xs font-bold text-emerald-950 flex items-center gap-1"><i class="fa-solid fa-check-double text-emerald-700"></i> <span data-i18n="pdfLabelLulus">Sudah Lulus & Sempurna:</span></span>
+                            <div class="flex flex-wrap gap-1.5 mt-1">
+                                ${passedBadges || '<span class="text-[11px] text-slate-400 italic">No checklist items yet</span>'}
+                            </div>
+                        </div>
+
+                        <div class="bg-amber-50/20 border border-amber-100 p-4 rounded-2xl flex flex-col gap-2">
+                            <span class="text-xs font-bold text-amber-950 flex items-center gap-1"><i class="fa-solid fa-rotate-left text-amber-700"></i> <span data-i18n="pdfLabelKeliru">Sedang Melatih / Masih Keliru:</span></span>
+                            <div class="flex flex-wrap gap-1.5 mt-1">
+                                ${needPracticeBadges || '<span class="text-[11px] text-slate-400 italic">No checklist items yet</span>'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DIAGRAM SPIDER CHART & RAPORT EVALUASI -->
+                <div class="bg-white p-6 rounded-3xl shadow border border-slate-200">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                        <div class="md:col-span-4 flex flex-col justify-center items-center bg-slate-50 rounded-2xl p-4 border border-slate-100 h-64">
+                            <canvas id="parentRadarChart"></canvas>
+                        </div>
+
+                        <div class="md:col-span-8 flex flex-col gap-4 text-xs">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="p-3 bg-slate-50/50 rounded-xl border">
+                                    <span class="font-bold text-slate-400 text-[10px] uppercase block mb-0.5" data-i18n="lbl_makhraj">${t('lbl_makhraj')}</span>
+                                    <p class="font-extrabold text-sm text-emerald-900">${student.skills.makhraj} / 100</p>
+                                </div>
+                                <div class="p-3 bg-slate-50/50 rounded-xl border">
+                                    <span class="font-bold text-slate-400 text-[10px] uppercase block mb-0.5" data-i18n="lbl_tajwid">${t('lbl_tajwid')}</span>
+                                    <p class="font-extrabold text-sm text-emerald-900">${student.skills.tajwid} / 100</p>
+                                </div>
+                                <div class="p-3 bg-slate-50/50 rounded-xl border">
+                                    <span class="font-bold text-slate-400 text-[10px] uppercase block mb-0.5" data-i18n="lbl_tahsin">${t('lbl_tahsin')}</span>
+                                    <p class="font-extrabold text-sm text-emerald-900">${student.skills.tahsin} / 100</p>
+                                </div>
+                                <div class="p-3 bg-slate-50/50 rounded-xl border">
+                                    <span class="font-bold text-slate-400 text-[10px] uppercase block mb-0.5" data-i18n="lbl_adab">${t('lbl_adab')}</span>
+                                    <p class="font-extrabold text-sm text-emerald-900">${student.skills.adab} / 100</p>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="p-4 bg-amber-50/70 border border-amber-200/50 rounded-2xl">
+                                    <h4 class="font-bold text-amber-900 mb-1 flex items-center gap-1" data-i18n="lbl_report_pdf_notes">${t('lbl_report_pdf_notes')}</h4>
+                                    <p class="text-amber-800 leading-relaxed font-medium italic">"${student.catatanAnak}"</p>
+                                </div>
+                                <div class="p-4 bg-emerald-50/50 border border-emerald-200/30 rounded-2xl">
+                                    <h4 class="font-bold text-emerald-950 mb-1 flex items-center gap-1" data-i18n="lbl_report_pdf_potential">${t('lbl_report_pdf_potential')}</h4>
+                                    <p class="text-emerald-800 leading-relaxed font-medium">"${student.potensiAnak}"</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIWAYAT JURNAL BELAJAR -->
+                <div class="bg-white p-6 rounded-3xl shadow border border-slate-200">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-1.5">
+                        <i class="fa-solid fa-clock-rotate-left text-slate-500"></i> <span data-i18n="lbl_session_logs_title">${t('lbl_session_logs_title')}</span>
+                    </h3>
+                    <div class="flex flex-col gap-3">
+                        ${logsHtml}
+                    </div>
+                </div>
+            `;
+
+            setTimeout(() => {
+                renderRadarChart('parentRadarChart', student.skills, false);
+            }, 50);
+        }
+
+        // =========================================================================
+        // 11. LOGIKA EXPORTER HTML TO PDF (HTML2PDF.JS)
+        // =========================================================================
+        function downloadStudentPdfReport() {
+            const student = students.find(s => s.id === selectedStudentId);
+            if (!student) return;
+
+            showToast(t('toast_pdf_processing'), "loading");
+
+            document.getElementById('pdfSiswaNama').innerText = student.name;
+            document.getElementById('pdfSiswaUsia').innerText = student.age;
+            document.getElementById('pdfSiswaKategori').innerText = student.learningLevel;
+            document.getElementById('pdfSiswaMateri').innerText = `${student.currentBook} (Halaman ${student.currentPage})`;
+            document.getElementById('pdfSiswaWali').innerText = student.parentName;
+            document.getElementById('pdfSiswaSesi').innerText = `${student.completedSessions} / ${student.packageSessions} ${t('lbl_sessions_count')}`;
+
+            // Checklist to PDF view
+            document.getElementById('pdfLulusHuruf').innerText = student.passedHuruf.join(", ") || "-";
+            document.getElementById('pdfUlangHuruf').innerText = student.needPracticeHuruf.join(", ") || "-";
+
+            document.getElementById('pdfValMakhraj').innerText = `${student.skills.makhraj}`;
+            document.getElementById('pdfValTajwid').innerText = `${student.skills.tajwid}`;
+            document.getElementById('pdfValTahsin').innerText = `${student.skills.tahsin}`;
+            document.getElementById('pdfValKelancaran').innerText = `${student.skills.kelancaran}`;
+            document.getElementById('pdfValAdab').innerText = `${student.skills.adab}`;
+
+            document.getElementById('pdfSiswaCatatan').innerText = student.catatanAnak;
+            document.getElementById('pdfSiswaPotensi').innerText = student.potensiAnak;
+            
+            const now = new Date();
+            document.getElementById('pdfExportTimestamp').innerText = `${t('lbl_download_time')}: ${now.toLocaleDateString(currentLang === 'en' ? 'en-US' : 'id-ID')} - ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} WIB`;
+
+            if (parentRadarInstance) {
+                const base64Img = parentRadarInstance.toBase64Image();
+                document.getElementById('pdfRadarImage').src = base64Img;
+            }
+
+            const element = document.getElementById('pdfPrintTemplate');
+            const opt = {
+                margin:       [0.4, 0.4, 0.4, 0.4],
+                filename:     `Report_Quran_${student.name.replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+
+            setTimeout(() => {
+                html2pdf().set(opt).from(element).save().then(() => {
+                    showToast(t('toast_pdf_success'), "success");
+                }).catch(() => {
+                    showToast("Failed to process PDF file.", "error");
+                });
+            }, 300);
+        }
+
+        // =========================================================================
+        // 12. INITIALIZATION ON PAGE LOAD
+        // =========================================================================
+        function initApp() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            
+            if (code) {
+                const matchedStudent = students.find(s => s.uniqueCode === code);
+                if (matchedStudent) {
+                    selectedStudentId = matchedStudent.id;
+                    currentView = 'parent';
+                    showToast(`Accessing Report: ${matchedStudent.name}`, "success");
+                }
+            }
+            updateLayout();
+        }
+
+        window.onload = function() {
+            initApp();
+        };
+    </script>
+</body>
+</html>
